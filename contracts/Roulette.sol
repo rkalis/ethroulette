@@ -5,6 +5,7 @@ contract Roulette {
     address public owner;
 
     event PlayEvent(address player, uint256 betSize, uint betNumber, uint winningNumber);
+    event PayoutEvent(address winner, uint256 payout);
 
     constructor(uint256 _maxBetDivisor) public {
         owner = msg.sender;
@@ -29,6 +30,7 @@ contract Roulette {
 
         uint winningNumber = generateWinningNumber();
         emit PlayEvent(msg.sender, msg.value, number, winningNumber);
+
         if (number == winningNumber) {
             payout(msg.sender, msg.value * 36);
         }
@@ -38,7 +40,7 @@ contract Roulette {
         return address(this).balance / maxBetDivisor;
     }
 
-    function generateWinningNumber() public view returns (uint) {
+    function generateWinningNumber() internal view returns (uint) {
         return block.number % 37;
     }
 
@@ -46,5 +48,6 @@ contract Roulette {
         require(amount > 0);
         require(amount <= address(this).balance);
         winner.transfer(amount);
+        emit PayoutEvent(winner, amount);
     }
 }

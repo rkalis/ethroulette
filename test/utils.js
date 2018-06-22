@@ -33,6 +33,6 @@ module.exports = {
             return entry.args;
         });
         eventArgs = _.filter(eventArgs, argfilter);
-        assert.isEmptyEmpty(eventArgs, 'Event filter returned results');
+        assert.isEmpty(eventArgs, 'Event filter returned results');
     }
 }

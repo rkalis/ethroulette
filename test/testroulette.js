@@ -1,10 +1,10 @@
 const Roulette = artifacts.require('Roulette');
 const utils = require('./utils');
+const BigNumber = require('bignumber.js').BigNumber;
 const chai = require("chai");
 const chaiAsPromised = require("chai-as-promised");
 
 chai.use(chaiAsPromised);
-
 const assert = chai.assert;
 
 contract('roulette', async (accounts) => {
@@ -17,18 +17,19 @@ contract('roulette', async (accounts) => {
     const maxBetDivisor = 100;
 
     beforeEach(async () => {
-        roulette = await Roulette.new(maxBetDivisor);
+        roulette = await Roulette.new(maxBetDivisor, {from: fundingAccount});
         await roulette.fund({from: fundingAccount, value: fundingSize});
         assert.equal(web3.eth.getBalance(roulette.address).toNumber(), fundingSize);
     });
     afterEach(async () => {
-        await roulette.kill();
+        await roulette.kill({from: fundingAccount});
     });
 
     it("should lose when bet on the wrong number", async () => {
         // given
         let betSize = 1;
         let betNumber = web3.eth.getBlock("latest").number % 37;
+        // let betterStartingBalance = web3.eth.getBalance(bettingAccount);
 
         // when
         let tx = await roulette.bet(betNumber, {from: bettingAccount, value: betSize});
@@ -37,6 +38,7 @@ contract('roulette', async (accounts) => {
         utils.assertEvent(tx, 'PlayEvent', (ev) => {
             return ev.player === bettingAccount && !ev.betNumber.eq(ev.winningNumber);
         });
+        utils.assertNotEvent(tx, 'PayoutEvent');
         assert.equal(web3.eth.getBalance(roulette.address).toNumber(), fundingSize + betSize);
     });
 
@@ -52,6 +54,9 @@ contract('roulette', async (accounts) => {
         utils.assertEvent(tx, 'PlayEvent', (ev) => {
             return ev.player === bettingAccount && ev.betNumber.eq(ev.winningNumber);
         });
+        utils.assertEvent(tx, 'PayoutEvent', (ev) => {
+            return ev.winner === bettingAccount && ev.payout.eq((BigNumber(36 * betSize)));
+        });
         assert.equal(web3.eth.getBalance(roulette.address).toNumber(), fundingSize + betSize - betSize * 36);
     });
 
@@ -60,9 +65,8 @@ contract('roulette', async (accounts) => {
         let betSize = 2;
         let betNumber = 10;
 
-        // when
+        // when, then
         await assert.isRejected(roulette.bet(betNumber, {from: bettingAccount, value: betSize}));
-
         assert.equal(web3.eth.getBalance(roulette.address).toNumber(), fundingSize);
     });
 
@@ -70,9 +74,8 @@ contract('roulette', async (accounts) => {
         // given
         let betNumber = 10;
 
-        // when
+        // when, then
         await assert.isRejected(roulette.bet(betNumber, {from: bettingAccount}));
-
         assert.equal(web3.eth.getBalance(roulette.address).toNumber(), fundingSize);
     });
 });
