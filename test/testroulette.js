@@ -1,6 +1,7 @@
 const Roulette = artifacts.require('Roulette');
 const utils = require('./utils');
 const BigNumber = require('bignumber.js').BigNumber;
+const truffleAssert = require('truffle-assertions');
 const chai = require("chai");
 const chaiAsPromised = require("chai-as-promised");
 
@@ -9,7 +10,6 @@ const assert = chai.assert;
 
 contract('roulette', async (accounts) => {
     let roulette;
-    let playEvent;
 
     const fundingAccount = accounts[0];
     const bettingAccount = accounts[1];
@@ -29,32 +29,31 @@ contract('roulette', async (accounts) => {
         // given
         let betSize = 1;
         let betNumber = web3.eth.getBlock("latest").number % 37;
-        // let betterStartingBalance = web3.eth.getBalance(bettingAccount);
 
         // when
         let tx = await roulette.bet(betNumber, {from: bettingAccount, value: betSize});
 
         // then
-        utils.assertEvent(tx, 'PlayEvent', (ev) => {
+        truffleAssert.eventEmitted(tx, 'PlayEvent', (ev) => {
             return ev.player === bettingAccount && !ev.betNumber.eq(ev.winningNumber);
         });
-        utils.assertNotEvent(tx, 'PayoutEvent');
+        truffleAssert.eventNotEmitted(tx, 'PayoutEvent');
         assert.equal(web3.eth.getBalance(roulette.address).toNumber(), fundingSize + betSize);
     });
 
     it("should win when bet on the right number", async () => {
         // given
         let betSize = 1;
-        let betNumber = web3.eth.getBlock("latest").number % 37 + 1;
+        let betNumber = (web3.eth.getBlock("latest").number + 1) % 37;
 
         // when
         let tx = await roulette.bet(betNumber, {from: bettingAccount, value: betSize});
 
         // then
-        utils.assertEvent(tx, 'PlayEvent', (ev) => {
+        truffleAssert.eventEmitted(tx, 'PlayEvent', (ev) => {
             return ev.player === bettingAccount && ev.betNumber.eq(ev.winningNumber);
         });
-        utils.assertEvent(tx, 'PayoutEvent', (ev) => {
+        truffleAssert.eventEmitted(tx, 'PayoutEvent', (ev) => {
             return ev.winner === bettingAccount && ev.payout.eq((BigNumber(36 * betSize)));
         });
         assert.equal(web3.eth.getBalance(roulette.address).toNumber(), fundingSize + betSize - betSize * 36);
