@@ -1,10 +1,10 @@
-pragma solidity ^0.4.22;
+pragma solidity 0.4.23;
 
 contract Roulette {
-    uint256 public maxBetDivisor;
+    uint256 internal maxBetDivisor;
     address public owner;
 
-    event PlayEvent(address player, uint256 betSize, uint betNumber, uint winningNumber);
+    event PlayEvent(address player, uint256 betSize, uint8 betNumber, uint8 winningNumber);
     event PayoutEvent(address winner, uint256 payout);
 
     constructor(uint256 _maxBetDivisor) public {
@@ -16,19 +16,19 @@ contract Roulette {
         }
     }
 
-    function kill() public {
+    function kill() external {
         require(msg.sender == owner, "Only the owner can kill this contract");
         selfdestruct(owner);
     }
 
-    function fund() public payable {}
-    function() public payable {}
+    function fund() external payable {}
+    function() external payable {}
 
-    function bet(uint number) public payable {
+    function bet(uint8 number) external payable {
         require(msg.value <= getMaxBet(), "Bet amount can not exceed max bet size");
         require(msg.value > 0, "A bet should be placed");
 
-        uint winningNumber = generateWinningNumber();
+        uint8 winningNumber = generateWinningNumber();
         emit PlayEvent(msg.sender, msg.value, number, winningNumber);
 
         if (number == winningNumber) {
@@ -40,8 +40,8 @@ contract Roulette {
         return address(this).balance / maxBetDivisor;
     }
 
-    function generateWinningNumber() internal view returns (uint) {
-        return block.number % 37;
+    function generateWinningNumber() internal view returns (uint8) {
+        return uint8(block.number % 37);
     }
 
     function payout(address winner, uint256 amount) internal {
