@@ -24,10 +24,21 @@ contract('roulette', async (accounts) => {
     });
 
     it("should play", async () => {
+        roulette.LogDebugInteger({ fromBlock: 'latest' }).watch((error, log) => {
+            console.log(log.args.integer.toNumber())
+        });
+
+        console.log(web3.eth.getBalance(roulette.address).toNumber());
+        console.log((await roulette.token()).toNumber());
+        console.log('---------------------------------');
         let res = await roulette.bet(1, {from: bettingAccount, value: 1});
         let log = await promisifyLogWatch(roulette.LogPlay({ fromBlock: 'latest' }));
+        console.log('---------------------------------');
         console.log(log.args.betNumber.toNumber());
         console.log(log.args.winningNumber.toNumber());
+        console.log('---------------------------------');
+        console.log(web3.eth.getBalance(roulette.address).toNumber());
+        console.log((await roulette.token()).toNumber());
     })
 
     // it("should lose when bet on the wrong number", async () => {

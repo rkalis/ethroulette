@@ -3,7 +3,13 @@ pragma solidity ^0.4.23;
 import "oraclize-api/usingOraclize.sol";
 
 contract Roulette is usingOraclize {
+    uint256 public token;
     address public owner;
+
+    enum CashflowType {
+        Inflow,
+        Outflow
+    }
 
     struct PlayerInfo {
         address player;
@@ -17,9 +23,12 @@ contract Roulette is usingOraclize {
     event LogPlay(address player, uint256 betSize, uint8 betNumber, uint8 winningNumber);
     event LogPayout(address winner, uint256 payout);
 
+    event LogDebugInteger(uint256 integer);
+
     constructor() public {
         owner = msg.sender;
         OAR = OraclizeAddrResolverI(0x6f485C8BF6fc43eA212E93BBF8ce046C7f1cb475);
+        token = 1 ether;
     }
 
     function kill() external {
@@ -33,6 +42,8 @@ contract Roulette is usingOraclize {
     function bet(uint8 number) external payable {
         require(msg.value <= getMaxBet(), "Bet amount can not exceed max bet size");
         require(msg.value > 0, "A bet should be placed");
+
+        updateTokenValue(address(this).balance - msg.value, msg.value, CashflowType.Inflow);
 
         emit LogBet(msg.sender, msg.value, number);
         bytes32 qid = oraclize_query("WolframAlpha", "random number between 0 and 36");
@@ -61,7 +72,23 @@ contract Roulette is usingOraclize {
     function payout(address winner, uint256 amount) internal {
         require(amount > 0);
         require(amount <= address(this).balance);
+
+        updateTokenValue(address(this).balance, amount, CashflowType.Outflow);
+
         winner.transfer(amount);
         emit LogPayout(winner, amount);
+    }
+
+    function updateTokenValue(uint256 _balance, uint256 _change, CashflowType _cashflowType) internal returns (uint256) {
+        emit LogDebugInteger(_balance);
+        emit LogDebugInteger(_change);
+        uint256 multiplier = (_change * 1 ether) / _balance;
+        if (_cashflowType == CashflowType.Inflow) {
+            multiplier = 1 ether + multiplier;
+        } else {
+            multiplier = 1 ether - multiplier;
+        }
+        emit LogDebugInteger(multiplier);
+        token = token * multiplier / 1 ether;
     }
 }
