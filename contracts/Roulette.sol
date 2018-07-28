@@ -17,16 +17,20 @@ contract Roulette is usingOraclize {
         uint8 betNumber;
     }
 
+    // mapping(address=>uint256) investorBalances;
     mapping(bytes32=>PlayerInfo) players;
 
     event LogBet(address player, uint256 betSize, uint8 betNumber);
     event LogPlay(address player, uint256 betSize, uint8 betNumber, uint8 winningNumber);
     event LogPayout(address winner, uint256 payout);
+    // event LogInvest(address investor, uint256 ethAmount, uint256 tokenPrice, uint256 tokenAmount);
 
     event LogDebugInteger(uint256 integer);
 
     constructor() public {
         owner = msg.sender;
+
+        /* Set OAR for use with ethereum-bridge, remove for productio  */
         OAR = OraclizeAddrResolverI(0x6f485C8BF6fc43eA212E93BBF8ce046C7f1cb475);
         token = 1 ether;
     }
@@ -46,7 +50,9 @@ contract Roulette is usingOraclize {
         updateTokenValue(address(this).balance - msg.value, msg.value, CashflowType.Inflow);
 
         emit LogBet(msg.sender, msg.value, number);
-        bytes32 qid = oraclize_query("WolframAlpha", "random number between 0 and 36");
+        bytes32 qid = oraclize_query("WolframAlpha", "random integer between 0 and 1");
+
+        /* Store a player's info to retrieve it in the oraclize callback */
         players[qid] = PlayerInfo(msg.sender, msg.value, number);
     }
 
@@ -62,10 +68,12 @@ contract Roulette is usingOraclize {
         if (playerInfo.betNumber == winningNumber) {
             payout(playerInfo.player, playerInfo.betSize * 36);
         }
+
         delete players[qid];
     }
 
     function getMaxBet() public view returns (uint256) {
+        /* See README for motivation behind max bet (0.2 %) */
         return address(this).balance / 100;
     }
 
@@ -82,12 +90,15 @@ contract Roulette is usingOraclize {
     function updateTokenValue(uint256 _balance, uint256 _change, CashflowType _cashflowType) internal returns (uint256) {
         emit LogDebugInteger(_balance);
         emit LogDebugInteger(_change);
+
+        /* Calculates multiplier as a percentage change that the change presents relative to the total balance */
         uint256 multiplier = (_change * 1 ether) / _balance;
         if (_cashflowType == CashflowType.Inflow) {
             multiplier = 1 ether + multiplier;
         } else {
             multiplier = 1 ether - multiplier;
         }
+
         emit LogDebugInteger(multiplier);
         token = token * multiplier / 1 ether;
     }
