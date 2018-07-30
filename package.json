@@ -1,22 +1,23 @@
 {
-  "name": "pet-shop",
+  "name": "ethroulette",
   "version": "1.0.0",
   "description": "",
+  "author": "Rosco Kalis <roscokalis@gmail.com>",
+  "license": "MIT",
+  "repository": "https://github.com/rkalis/ethroulette",
   "main": "truffle.js",
   "directories": {
     "test": "test"
   },
   "scripts": {
     "dev": "lite-server",
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test": "truffle test"
   },
-  "author": "",
-  "license": "ISC",
   "devDependencies": {
     "bignumber.js": "^6.0.0",
     "chai": "^4.1.2",
     "chai-as-promised": "^7.1.1",
-    "lite-server": "^2.3.0",
+    "lite-server": "^2.4.0",
     "truffle-assertions": "^0.3.1"
   },
   "dependencies": {}
