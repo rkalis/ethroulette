@@ -1,4 +1,4 @@
-pragma solidity ^0.4.23;
+pragma solidity ^0.4.24;
 
 import "oraclize-api/contracts/usingOraclize.sol";
 import "openzeppelin-solidity/contracts/token/ERC20/ERC20Basic.sol";
@@ -13,6 +13,9 @@ contract Roulette is usingOraclize, ERC20Basic, Ownable {
     using SafeMath for uint256;
 
     uint256 internal internalTotalSupply;
+
+    uint256 internal safeGas = 2300;
+    uint256 constant internal ORACLIZE_GAS_LIMIT = 175000;
 
     struct PlayerInfo {
         address player;
@@ -29,8 +32,6 @@ contract Roulette is usingOraclize, ERC20Basic, Ownable {
     event Invest(address indexed investor, uint256 ethAmount, uint256 tokenPrice, uint256 tokenAmount);
     event Divest(address indexed investor, uint256 ethAmount, uint256 tokenPrice, uint256 tokenAmount);
     event Transfer(address indexed from, address indexed to, uint256 value);
-
-    event LogDebugInteger(uint256 integer);
 
     constructor() public {
         // Set OAR for use with ethereum-bridge, remove for production
@@ -126,14 +127,18 @@ contract Roulette is usingOraclize, ERC20Basic, Ownable {
      * @param number The number that is bet on.
      */
     function bet(uint8 number) external payable {
-        require(msg.value <= getMaxBet(), "Bet amount can not exceed max bet size");
-        require(msg.value > 0, "A bet should be placed");
+        require(msg.value <= maxBet(), "Bet amount can not exceed max bet size");
 
-        emit Bet(msg.sender, msg.value, number);
-        bytes32 qid = oraclize_query("WolframAlpha", "random integer between 0 and 36");
+        uint256 oraclizeFee = oraclize_getPrice("WolframAlpha", ORACLIZE_GAS_LIMIT + safeGas);
+        require(msg.value > oraclizeFee, "Bet amount should be higher than oraclize fee");
+
+        uint256 betValue = msg.value - oraclizeFee;
+
+        emit Bet(msg.sender, betValue, number);
+        bytes32 qid = oraclize_query("WolframAlpha", "random integer between 0 and 1", ORACLIZE_GAS_LIMIT + safeGas);
 
         /* Store a player's info to retrieve it in the oraclize callback */
-        players[qid] = PlayerInfo(msg.sender, msg.value, number);
+        players[qid] = PlayerInfo(msg.sender, betValue, number);
     }
 
     /**
@@ -195,7 +200,7 @@ contract Roulette is usingOraclize, ERC20Basic, Ownable {
      * @dev Based on empirical statistics (see README).
      * @return The maximum bet.
      */
-    function getMaxBet() public view returns (uint256) {
+    function maxBet() public view returns (uint256) {
         return address(this).balance.div(500);
     }
 

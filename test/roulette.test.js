@@ -14,20 +14,14 @@ contract('roulette', async (accounts) => {
 
     const ownerAccount = accounts[0];
     const bettingAccount = accounts[1];
-    const investmentSize = 1000000;
+    const investmentSize = 10e18;
 
     let debugEvent;
 
     beforeEach(async () => {
         roulette = await Roulette.new({from: ownerAccount});
-
-        debugEvent = roulette.LogDebugInteger({ fromBlock: 'latest' });
-        debugEvent.watch((error, log) => {
-            console.log(log.args.integer.toNumber())
-        });
     });
     afterEach(async () => {
-        debugEvent.stopWatching();
         await roulette.kill({from: ownerAccount});
     });
 
@@ -95,7 +89,7 @@ contract('roulette', async (accounts) => {
     it("wins when bet on the right number", async () => {
         // given
         await roulette.invest({from: ownerAccount, value: investmentSize});
-        let betSize = (await roulette.getMaxBet()).toNumber()
+        let betSize = (await roulette.maxBet()).toNumber()
         let betNumber = 0;
 
         // when
@@ -117,11 +111,11 @@ contract('roulette', async (accounts) => {
     it("loses when bet on the wrong number", async () => {
         // given
         await roulette.invest({from: ownerAccount, value: investmentSize});
-        let betSize = (await roulette.getMaxBet()).toNumber()
+        let betSize = (await roulette.maxBet()).toNumber()
         let betNumber = 1;
 
         // when
-        let betTx = await roulette.bet(betNumber, {from: bettingAccount, value: betSize});
+        await roulette.bet(betNumber, {from: bettingAccount, value: betSize});
         let playEvent = await getFirstEvent(roulette.Play({ fromBlock: 'latest' }));
         let callbackTx = await getTransactionResultForEvent(roulette, playEvent);
 
@@ -134,10 +128,35 @@ contract('roulette', async (accounts) => {
         assert.equal(web3.eth.getBalance(roulette.address).toNumber(), investmentSize + betSize);
     });
 
+    it("pays an oraclize fee when playing the second time", async () => {
+        // given
+        await roulette.invest({from: ownerAccount, value: investmentSize});
+        let betSize = (await roulette.maxBet()).toNumber()
+        let betNumber = 1;
+
+        // when
+        let betTx = await roulette.bet(betNumber, {from: bettingAccount, value: betSize});
+
+        // then
+        truffleAssert.eventEmitted(betTx, 'Bet', (ev) => {
+            return ev.player === bettingAccount && ev.betSize.eq(BigNumber(betSize));
+        });
+
+        // when
+        betTx = await roulette.bet(betNumber, {from: bettingAccount, value: betSize});
+
+        // then
+        truffleAssert.eventEmitted(betTx, 'Bet', (ev) => {
+            return ev.player === bettingAccount && ev.betSize.lt(BigNumber(betSize));
+        });
+
+        assert.isBelow(web3.eth.getBalance(roulette.address).toNumber(), investmentSize + 2 * betSize);
+    })
+
     it("can not bet more than max bet", async () => {
         // given
         await roulette.invest({from: ownerAccount, value: investmentSize});
-        let betSize = (await roulette.getMaxBet()).toNumber() + 10;
+        let betSize = (await roulette.maxBet()).toNumber() * 1.01;
         let betNumber = 0;
 
         // when, then
