@@ -3,14 +3,15 @@ pragma solidity ^0.4.23;
 import "oraclize-api/contracts/usingOraclize.sol";
 import "openzeppelin-solidity/contracts/token/ERC20/ERC20Basic.sol";
 import "openzeppelin-solidity/contracts/ownership/Ownable.sol";
-
-// TODO: Safe math
+import "openzeppelin-solidity/contracts/math/SafeMath.sol";
 
 /**
  * @title Roulette
  * @author Rosco Kalis <roscokalis@gmail.com>
  */
 contract Roulette is usingOraclize, ERC20Basic, Ownable {
+    using SafeMath for uint256;
+
     uint256 internal internalTotalSupply;
 
     struct PlayerInfo {
@@ -71,8 +72,8 @@ contract Roulette is usingOraclize, ERC20Basic, Ownable {
         require(value <= investorBalances[msg.sender], "Transfer amount can not be more than balance");
         require(to != address(0), "Can not transfer tokens to address(0)");
 
-        investorBalances[msg.sender] -= value;
-        investorBalances[to] += value;
+        investorBalances[msg.sender] = investorBalances[msg.sender].sub(value);
+        investorBalances[to] = investorBalances[to].add(value);
         emit Transfer(msg.sender, to, value);
         return true;
     }
@@ -90,8 +91,8 @@ contract Roulette is usingOraclize, ERC20Basic, Ownable {
         require(msg.value > 0, "An investment should be made");
 
         uint256 tokenAmount = convertEthToToken(msg.value);
-        investorBalances[msg.sender] += tokenAmount;
-        internalTotalSupply += tokenAmount;
+        investorBalances[msg.sender] = investorBalances[msg.sender].add(tokenAmount);
+        internalTotalSupply = internalTotalSupply.add(tokenAmount);
 
         emit Invest(msg.sender, msg.value, tokenPrice(), tokenAmount);
     }
@@ -106,8 +107,8 @@ contract Roulette is usingOraclize, ERC20Basic, Ownable {
         require(tokenAmount <= investorBalances[msg.sender], "Can not divest more than investment");
 
         uint256 ethAmount = convertTokenToEth(tokenAmount);
-        investorBalances[msg.sender] -= tokenAmount;
-        internalTotalSupply -= tokenAmount;
+        investorBalances[msg.sender] = investorBalances[msg.sender].sub(tokenAmount);
+        internalTotalSupply = internalTotalSupply.sub(tokenAmount);
         msg.sender.transfer(ethAmount);
 
         emit Divest(msg.sender, ethAmount, tokenPrice(), tokenAmount);
@@ -152,7 +153,7 @@ contract Roulette is usingOraclize, ERC20Basic, Ownable {
         emit Play(playerInfo.player, playerInfo.betSize, playerInfo.betNumber, winningNumber);
 
         if (playerInfo.betNumber == winningNumber) {
-            payout(playerInfo.player, playerInfo.betSize * 36);
+            payout(playerInfo.player, playerInfo.betSize.mul(36));
         }
 
         // TODO: Perhaps delete this info before sending payout (reentrancy)
@@ -186,7 +187,7 @@ contract Roulette is usingOraclize, ERC20Basic, Ownable {
         if (totalSupply() == 0 || address(this).balance == 0) {
             return 1 ether;
         }
-        return (address(this).balance * 1 ether) / totalSupply();
+        return address(this).balance.mul(1 ether).div(totalSupply());
     }
 
     /**
@@ -195,7 +196,7 @@ contract Roulette is usingOraclize, ERC20Basic, Ownable {
      * @return The maximum bet.
      */
     function getMaxBet() public view returns (uint256) {
-        return address(this).balance / 500;
+        return address(this).balance.div(500);
     }
 
     /**
@@ -203,7 +204,7 @@ contract Roulette is usingOraclize, ERC20Basic, Ownable {
      * @param ethAmount The amount of eth to convert.
      */
     function convertEthToToken(uint256 ethAmount) public view returns (uint256) {
-        return (ethAmount * 1 ether) / tokenPrice();
+        return ethAmount.mul(1 ether).div(tokenPrice());
     }
 
     /**
@@ -211,7 +212,7 @@ contract Roulette is usingOraclize, ERC20Basic, Ownable {
      * @param tokenAmount The amount of tokens to convert.
      */
     function convertTokenToEth(uint256 tokenAmount) public view returns (uint256) {
-        return (tokenPrice() * tokenAmount) / 1 ether;
+        return tokenPrice().mul(tokenAmount).div(1 ether);
     }
 
     // ///////////////////////
