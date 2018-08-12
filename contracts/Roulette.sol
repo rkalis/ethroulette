@@ -1,7 +1,8 @@
 pragma solidity ^0.4.23;
 
 import "oraclize-api/contracts/usingOraclize.sol";
-import "zeppelin/contracts/token/ERC20Basic.sol";
+import "openzeppelin-solidity/contracts/token/ERC20/ERC20Basic.sol";
+import "openzeppelin-solidity/contracts/ownership/Ownable.sol";
 
 // TODO: Safe math
 
@@ -9,9 +10,8 @@ import "zeppelin/contracts/token/ERC20Basic.sol";
  * @title Roulette
  * @author Rosco Kalis <roscokalis@gmail.com>
  */
-contract Roulette is usingOraclize, ERC20Basic {
-    uint256 public totalSupply;
-    address public owner;
+contract Roulette is usingOraclize, ERC20Basic, Ownable {
+    uint256 internal internalTotalSupply;
 
     struct PlayerInfo {
         address player;
@@ -31,12 +31,7 @@ contract Roulette is usingOraclize, ERC20Basic {
 
     event LogDebugInteger(uint256 integer);
 
-    /**
-     * @notice Initialises `msg.sender` as the owner of this contract..
-     */
     constructor() public {
-        owner = msg.sender;
-
         // Set OAR for use with ethereum-bridge, remove for production
         OAR = OraclizeAddrResolverI(0x6f485C8BF6fc43eA212E93BBF8ce046C7f1cb475);
     }
@@ -46,15 +41,15 @@ contract Roulette is usingOraclize, ERC20Basic {
      */
     function() public payable {}
 
-    /**
-     * @notice Kills the contract, can only be executed by the owner.
-     */
-    function kill() external {
-        require(msg.sender == owner, "Only the owner can kill this contract");
-        selfdestruct(owner);
-    }
-
     // ERC20Basic functions
+
+    /**
+     * @notice Returns the current total token supply.
+     * @return The total token supply.
+     */
+    function totalSupply() public view returns(uint256) {
+        return internalTotalSupply;
+    }
 
     /**
      * @notice Retrieves the token balance of an account.
@@ -96,7 +91,7 @@ contract Roulette is usingOraclize, ERC20Basic {
 
         uint256 tokenAmount = convertEthToToken(msg.value);
         investorBalances[msg.sender] += tokenAmount;
-        totalSupply += tokenAmount;
+        internalTotalSupply += tokenAmount;
 
         emit Invest(msg.sender, msg.value, tokenPrice(), tokenAmount);
     }
@@ -112,7 +107,7 @@ contract Roulette is usingOraclize, ERC20Basic {
 
         uint256 ethAmount = convertTokenToEth(tokenAmount);
         investorBalances[msg.sender] -= tokenAmount;
-        totalSupply -= tokenAmount;
+        internalTotalSupply -= tokenAmount;
         msg.sender.transfer(ethAmount);
 
         emit Divest(msg.sender, ethAmount, tokenPrice(), tokenAmount);
@@ -134,7 +129,7 @@ contract Roulette is usingOraclize, ERC20Basic {
         require(msg.value > 0, "A bet should be placed");
 
         emit Bet(msg.sender, msg.value, number);
-        bytes32 qid = oraclize_query("WolframAlpha", "random integer between 0 and 1");
+        bytes32 qid = oraclize_query("WolframAlpha", "random integer between 0 and 36");
 
         /* Store a player's info to retrieve it in the oraclize callback */
         players[qid] = PlayerInfo(msg.sender, msg.value, number);
@@ -188,10 +183,10 @@ contract Roulette is usingOraclize, ERC20Basic {
      * @return The token price.
      */
     function tokenPrice() public view returns (uint256) {
-        if (totalSupply == 0 || address(this).balance == 0) {
+        if (totalSupply() == 0 || address(this).balance == 0) {
             return 1 ether;
         }
-        return (address(this).balance * 1 ether) / totalSupply;
+        return (address(this).balance * 1 ether) / totalSupply();
     }
 
     /**

@@ -10,15 +10,22 @@
     "test": "test"
   },
   "scripts": {
-    "dev": "lite-server",
-    "test": "truffle test"
+    "deploy-bridge": "node_modules/ethereum-bridge/bridge.js -H localhost:8545 -a 9 --oar 0x6f485C8BF6fc43eA212E93BBF8ce046C7f1cb475",
+    "truffle:compile": "truffle compile",
+    "truffle:migrate": "truffle migrate",
+    "truffle:test": "truffle test",
+    "test": "truffle test",
+    "prepare": "truffle install"
   },
   "devDependencies": {
     "bignumber.js": "^6.0.0",
     "chai": "^4.1.2",
     "chai-as-promised": "^7.1.1",
+    "ethereum-bridge": "^0.6.1",
     "lite-server": "^2.4.0",
     "truffle-assertions": "^0.3.1"
   },
-  "dependencies": {}
+  "dependencies": {
+    "openzeppelin-solidity": "^1.12.0"
+  }
 }

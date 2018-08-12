@@ -1,4 +1,4 @@
-const Roulette = artifacts.require('Roulette');
+const Roulette = artifacts.require('RouletteForTesting');
 const BigNumber = require('bignumber.js').BigNumber;
 const truffleAssert = require('truffle-assertions');
 const chai = require("chai");
@@ -31,22 +31,6 @@ contract('roulette', async (accounts) => {
         await roulette.kill({from: ownerAccount});
     });
 
-    it("should play", async () => {
-        // await roulette.invest({from: ownerAccount, value: investmentSize});
-
-        // console.log(web3.eth.getBalance(roulette.address).toNumber());
-        // console.log((await roulette.tokenPrice()).toNumber());
-        // console.log('---------------------------------');
-        // let res = await roulette.bet(1, {from: bettingAccount, value: 1});
-        // let log = await promisifyLogWatch(roulette.LogPlay({ fromBlock: 'latest' }));
-        // console.log('---------------------------------');
-        // console.log(log.args.betNumber.toNumber());
-        // console.log(log.args.winningNumber.toNumber());
-        // console.log('---------------------------------');
-        // console.log(web3.eth.getBalance(roulette.address).toNumber());
-        // console.log((await roulette.tokenPrice()).toNumber());
-    })
-
     it("can invest", async () => {
         // given
         let tokenPriceBeforeInvestment = (await roulette.tokenPrice()).toNumber();
@@ -68,7 +52,7 @@ contract('roulette', async (accounts) => {
         })
     })
 
-    it("can divest", async () => {
+    it("can divest when sufficiently invested", async () => {
         // given
         await roulette.invest({from: ownerAccount, value: investmentSize});
 
@@ -95,70 +79,106 @@ contract('roulette', async (accounts) => {
         });
     })
 
+    it("can not divest when insufficiently invested", async () => {
+        // given
+        await roulette.invest({from: ownerAccount, value: investmentSize});
 
+        let tokenPriceBeforeDivestment = (await roulette.tokenPrice()).toNumber();
 
-    // it("should lose when bet on the wrong number", async () => {
-    //     // given
-    //     let betSize = 1;
-    //     let betNumber = web3.eth.getBlock("latest").number % 37;
+        let divestmentSizeInEth = investmentSize * 1.1;
+        let divestmentSizeInTokens = divestmentSizeInEth / tokenPriceBeforeDivestment * 1e18;
 
-    //     // when
-    //     let tx = await roulette.bet(betNumber, {from: bettingAccount, value: betSize});
+        // when, then
+        await assert.isRejected(roulette.divest(divestmentSizeInTokens, {from: ownerAccount}));
+    })
 
-    //     // then
-    //     truffleAssert.eventEmitted(tx, 'PlayEvent', (ev) => {
-    //         return ev.player === bettingAccount && !ev.betNumber.eq(ev.winningNumber);
-    //     });
-    //     truffleAssert.eventNotEmitted(tx, 'PayoutEvent');
-    //     assert.equal(web3.eth.getBalance(roulette.address).toNumber(), fundingSize + betSize);
-    // });
+    it("wins when bet on the right number", async () => {
+        // given
+        await roulette.invest({from: ownerAccount, value: investmentSize});
+        let betSize = (await roulette.getMaxBet()).toNumber()
+        let betNumber = 0;
 
-    // it("should win when bet on the right number", async () => {
-    //     // given
-    //     let betSize = 1;
-    //     let betNumber = (web3.eth.getBlock("latest").number + 1) % 37;
+        // when
+        let betTx = await roulette.bet(betNumber, {from: bettingAccount, value: betSize});
+        let playEvent = await getFirstEvent(roulette.Play({ fromBlock: 'latest' }));
+        let callbackTx = await getTransactionResultForEvent(roulette, playEvent);
 
-    //     // when
-    //     let tx = await roulette.bet(betNumber, {from: bettingAccount, value: betSize});
+        // then
+        truffleAssert.eventEmitted(callbackTx, 'Play', (ev) => {
+            return ev.player === bettingAccount && ev.betNumber.eq(ev.winningNumber);
+        });
+        truffleAssert.eventEmitted(callbackTx, 'Payout', (ev) => {
+            return ev.winner === bettingAccount && ev.payout.eq((BigNumber(36 * betSize)));
+        });
 
-    //     // then
-    //     truffleAssert.eventEmitted(tx, 'PlayEvent', (ev) => {
-    //         return ev.player === bettingAccount && ev.betNumber.eq(ev.winningNumber);
-    //     });
-    //     truffleAssert.eventEmitted(tx, 'PayoutEvent', (ev) => {
-    //         return ev.winner === bettingAccount && ev.payout.eq((BigNumber(36 * betSize)));
-    //     });
-    //     assert.equal(web3.eth.getBalance(roulette.address).toNumber(), fundingSize + betSize - betSize * 36);
-    // });
+        assert.equal(web3.eth.getBalance(roulette.address).toNumber(), investmentSize + betSize - betSize * 36);
+    });
 
-    // it("should not be able to bet more than max bet", async () => {
-    //     // given
-    //     let betSize = 2;
-    //     let betNumber = 10;
+    it("loses when bet on the wrong number", async () => {
+        // given
+        await roulette.invest({from: ownerAccount, value: investmentSize});
+        let betSize = (await roulette.getMaxBet()).toNumber()
+        let betNumber = 1;
 
-    //     // when, then
-    //     await assert.isRejected(roulette.bet(betNumber, {from: bettingAccount, value: betSize}));
-    //     assert.equal(web3.eth.getBalance(roulette.address).toNumber(), fundingSize);
-    // });
+        // when
+        let betTx = await roulette.bet(betNumber, {from: bettingAccount, value: betSize});
+        let playEvent = await getFirstEvent(roulette.Play({ fromBlock: 'latest' }));
+        let callbackTx = await getTransactionResultForEvent(roulette, playEvent);
 
-    // it("should not be able to play without betting", async () => {
-    //     // given
-    //     let betNumber = 10;
+        // then
+        truffleAssert.eventEmitted(callbackTx, 'Play', (ev) => {
+            return ev.player === bettingAccount && !ev.betNumber.eq(ev.winningNumber);
+        });
+        truffleAssert.eventNotEmitted(callbackTx, 'Payout');
 
-    //     // when, then
-    //     await assert.isRejected(roulette.bet(betNumber, {from: bettingAccount}));
-    //     assert.equal(web3.eth.getBalance(roulette.address).toNumber(), fundingSize);
-    // });
+        assert.equal(web3.eth.getBalance(roulette.address).toNumber(), investmentSize + betSize);
+    });
+
+    it("can not bet more than max bet", async () => {
+        // given
+        await roulette.invest({from: ownerAccount, value: investmentSize});
+        let betSize = (await roulette.getMaxBet()).toNumber() + 10;
+        let betNumber = 0;
+
+        // when, then
+        await assert.isRejected(roulette.bet(betNumber, {from: bettingAccount, value: betSize}));
+        assert.equal(web3.eth.getBalance(roulette.address).toNumber(), investmentSize);
+    });
+
+    it("can not play without betting", async () => {
+        // given
+        await roulette.invest({from: ownerAccount, value: investmentSize});
+        let betNumber = 0;
+
+        // when, then
+        await assert.isRejected(roulette.bet(betNumber, {from: bettingAccount}));
+        assert.equal(web3.eth.getBalance(roulette.address).toNumber(), investmentSize);
+    });
+
 });
 
-promisifyLogWatch = (_event) => {
+getTransactionResultForEvent = (contract, eventLog) => {
     return new Promise((resolve, reject) => {
-      _event.watch((error, log) => {
-        _event.stopWatching();
-        if (error !== null)
-          reject(error);
+        let allEvents = contract.allEvents({fromBlock: eventLog.blockNumber, toBlock: eventLog.blockNumber});
+        allEvents.get((error, logs) => {
+            if (error !== null)
+                reject(error);
+            resolve({
+                tx: eventLog.transactionHash,
+                receipt: web3.eth.getTransactionReceipt(eventLog.transactionHash),
+                logs: logs.filter(log => log.transactionHash == eventLog.transactionHash)
+            });
+        })
+    })
+}
 
-        resolve(log);
-      });
+getFirstEvent = (_event) => {
+    return new Promise((resolve, reject) => {
+        _event.watch((error, log) => {
+            _event.stopWatching();
+            if (error !== null)
+                reject(error);
+            resolve(log);
+        });
     });
-  }
+}

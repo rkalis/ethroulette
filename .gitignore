@@ -1,2 +1,4 @@
-node_modules
-installed_contracts
+build/
+node_modules/
+installed_contracts/
+bridge.log
