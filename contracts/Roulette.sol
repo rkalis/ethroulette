@@ -196,12 +196,12 @@ contract Roulette is usingOraclize, ERC20Basic, Pausable {
     }
 
     /**
-     * @notice Returns the maximum bet (0.2% of balance) for this contract.
-     * @dev Based on empirical statistics (see README).
+     * @notice Returns the maximum bet (0.5% of balance) for this contract.
+     * @dev Based on empirical statistics (see docs/max_bet_size.md).
      * @return The maximum bet.
      */
     function maxBet() public view returns (uint256) {
-        return address(this).balance.div(500);
+        return address(this).balance.div(200);
     }
 
     /**
