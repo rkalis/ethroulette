@@ -2,14 +2,14 @@ pragma solidity ^0.4.24;
 
 import "oraclize-api/contracts/usingOraclize.sol";
 import "openzeppelin-solidity/contracts/token/ERC20/ERC20Basic.sol";
-import "openzeppelin-solidity/contracts/ownership/Ownable.sol";
 import "openzeppelin-solidity/contracts/math/SafeMath.sol";
+import "openzeppelin-solidity/contracts/lifecycle/Pausable.sol";
 
 /**
  * @title Roulette
  * @author Rosco Kalis <roscokalis@gmail.com>
  */
-contract Roulette is usingOraclize, ERC20Basic, Ownable {
+contract Roulette is usingOraclize, ERC20Basic, Pausable {
     using SafeMath for uint256;
 
     uint256 internal internalTotalSupply;
@@ -88,7 +88,7 @@ contract Roulette is usingOraclize, ERC20Basic, Ownable {
      * @dev Uses the conversion functions.
      * @dev Emits Invest event.
      */
-    function invest() external payable {
+    function invest() external payable whenNotPaused {
         require(msg.value > 0, "An investment should be made");
 
         uint256 tokenAmount = convertEthToToken(msg.value);
@@ -126,7 +126,7 @@ contract Roulette is usingOraclize, ERC20Basic, Ownable {
      * @dev Emits Bet event.
      * @param number The number that is bet on.
      */
-    function bet(uint8 number) external payable {
+    function bet(uint8 number) external payable whenNotPaused {
         require(msg.value <= maxBet(), "Bet amount can not exceed max bet size");
 
         uint256 oraclizeFee = oraclize_getPrice("WolframAlpha", ORACLIZE_GAS_LIMIT + safeGas);
@@ -172,7 +172,7 @@ contract Roulette is usingOraclize, ERC20Basic, Ownable {
      * @param winner The account of the bet winner.
      * @param amount The amount to be paid out to the bet winner.
      */
-    function payout(address winner, uint256 amount) internal {
+    function payout(address winner, uint256 amount) internal whenNotPaused {
         require(amount > 0, "Payout amount should be more than 0");
         require(amount <= address(this).balance, "Payout amount should not be more than contract balance");
 

@@ -19,7 +19,7 @@ contract RouletteForTesting is Roulette {
      * @notice Overrides the existing bet function, always takes 1 as winning number.
      * @param number The number that is bet on.
      */
-    function bet(uint8 number) external payable {
+    function bet(uint8 number) external payable whenNotPaused {
         require(msg.value <= maxBet(), "Bet amount can not exceed max bet size");
 
         uint256 oraclizeFee = oraclize_getPrice("WolframAlpha", ORACLIZE_GAS_LIMIT + safeGas);
