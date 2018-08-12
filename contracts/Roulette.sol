@@ -10,14 +10,8 @@ import "zeppelin/contracts/token/ERC20Basic.sol";
  * @author Rosco Kalis <roscokalis@gmail.com>
  */
 contract Roulette is usingOraclize, ERC20Basic {
-    uint256 public tokenPrice;
     uint256 public totalSupply;
     address public owner;
-
-    enum CashflowType {
-        Inflow,
-        Outflow
-    }
 
     struct PlayerInfo {
         address player;
@@ -38,14 +32,13 @@ contract Roulette is usingOraclize, ERC20Basic {
     event LogDebugInteger(uint256 integer);
 
     /**
-     * @notice Initialises `msg.sender` as the owner of this contract and initialises the tokenPrice at 1 eth.
+     * @notice Initialises `msg.sender` as the owner of this contract..
      */
     constructor() public {
         owner = msg.sender;
 
         // Set OAR for use with ethereum-bridge, remove for production
         OAR = OraclizeAddrResolverI(0x6f485C8BF6fc43eA212E93BBF8ce046C7f1cb475);
-        tokenPrice = 1 ether;
     }
 
     /**
@@ -80,8 +73,8 @@ contract Roulette is usingOraclize, ERC20Basic {
      * @return True.
      */
     function transfer(address to, uint256 value) public returns (bool) {
-        require(value <= investorBalances[msg.sender]);
-        require(to != address(0));
+        require(value <= investorBalances[msg.sender], "Transfer amount can not be more than balance");
+        require(to != address(0), "Can not transfer tokens to address(0)");
 
         investorBalances[msg.sender] -= value;
         investorBalances[to] += value;
@@ -103,8 +96,9 @@ contract Roulette is usingOraclize, ERC20Basic {
 
         uint256 tokenAmount = convertEthToToken(msg.value);
         investorBalances[msg.sender] += tokenAmount;
+        totalSupply += tokenAmount;
 
-        emit Invest(msg.sender, msg.value, tokenPrice, tokenAmount);
+        emit Invest(msg.sender, msg.value, tokenPrice(), tokenAmount);
     }
 
     /**
@@ -116,12 +110,12 @@ contract Roulette is usingOraclize, ERC20Basic {
     function divest(uint256 tokenAmount) external {
         require(tokenAmount <= investorBalances[msg.sender], "Can not divest more than investment");
 
-        investorBalances[msg.sender] -= tokenAmount;
-
         uint256 ethAmount = convertTokenToEth(tokenAmount);
+        investorBalances[msg.sender] -= tokenAmount;
+        totalSupply -= tokenAmount;
         msg.sender.transfer(ethAmount);
 
-        emit Divest(msg.sender, ethAmount, tokenPrice, tokenAmount);
+        emit Divest(msg.sender, ethAmount, tokenPrice(), tokenAmount);
     }
 
     // ///////////////////////
@@ -138,8 +132,6 @@ contract Roulette is usingOraclize, ERC20Basic {
     function bet(uint8 number) external payable {
         require(msg.value <= getMaxBet(), "Bet amount can not exceed max bet size");
         require(msg.value > 0, "A bet should be placed");
-
-        updateTokenPrice(address(this).balance - msg.value, msg.value, CashflowType.Inflow);
 
         emit Bet(msg.sender, msg.value, number);
         bytes32 qid = oraclize_query("WolframAlpha", "random integer between 0 and 1");
@@ -180,10 +172,8 @@ contract Roulette is usingOraclize, ERC20Basic {
      * @param amount The amount to be paid out to the bet winner.
      */
     function payout(address winner, uint256 amount) internal {
-        require(amount > 0);
-        require(amount <= address(this).balance);
-
-        updateTokenPrice(address(this).balance, amount, CashflowType.Outflow);
+        require(amount > 0, "Payout amount should be more than 0");
+        require(amount <= address(this).balance, "Payout amount should not be more than contract balance");
 
         winner.transfer(amount);
         emit Payout(winner, amount);
@@ -194,21 +184,14 @@ contract Roulette is usingOraclize, ERC20Basic {
     // Utility functions
 
     /**
-     * @notice Updates the token price according to the current balance, and the balance change.
-     * @param _balance The balance to use in the price computation.
-     * @param _change The change in balance to use in the price computation.
-     * @param _cashflowType The type of the balance change (inflow or outflow).
+     * @notice Returns the token price, which is derived from the balance and total supply.
+     * @return The token price.
      */
-    function updateTokenPrice(uint256 _balance, uint256 _change, CashflowType _cashflowType) internal returns (uint256) {
-        /* Calculates multiplier as a percentage change that the change presents relative to the total balance */
-        uint256 multiplier = (_change * 1 ether) / _balance;
-        if (_cashflowType == CashflowType.Inflow) {
-            multiplier = 1 ether + multiplier;
-        } else {
-            multiplier = 1 ether - multiplier;
+    function tokenPrice() public view returns (uint256) {
+        if (totalSupply == 0 || address(this).balance == 0) {
+            return 1 ether;
         }
-
-        tokenPrice = tokenPrice * multiplier / 1 ether;
+        return (address(this).balance * 1 ether) / totalSupply;
     }
 
     /**
@@ -225,7 +208,7 @@ contract Roulette is usingOraclize, ERC20Basic {
      * @param ethAmount The amount of eth to convert.
      */
     function convertEthToToken(uint256 ethAmount) public view returns (uint256) {
-        return (ethAmount * 1 ether) / tokenPrice;
+        return (ethAmount * 1 ether) / tokenPrice();
     }
 
     /**
@@ -233,7 +216,7 @@ contract Roulette is usingOraclize, ERC20Basic {
      * @param tokenAmount The amount of tokens to convert.
      */
     function convertTokenToEth(uint256 tokenAmount) public view returns (uint256) {
-        return (tokenPrice * tokenAmount) / 1 ether;
+        return (tokenPrice() * tokenAmount) / 1 ether;
     }
 
     // ///////////////////////
