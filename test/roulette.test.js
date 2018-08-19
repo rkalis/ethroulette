@@ -14,7 +14,7 @@ contract('roulette', async (accounts) => {
 
     const ownerAccount = accounts[0];
     const bettingAccount = accounts[1];
-    const investmentSize = 10e18;
+    const investmentSize = 1e18;
 
     let debugEvent;
 
@@ -105,7 +105,7 @@ contract('roulette', async (accounts) => {
             return ev.winner === bettingAccount && ev.payout.eq((BigNumber(36 * betSize)));
         });
 
-        assert.equal(web3.eth.getBalance(roulette.address).toNumber(), investmentSize + betSize - betSize * 36);
+        assert.equal(web3.eth.getBalance(roulette.address).toNumber(), investmentSize + betSize - betSize * 36, "Balance should equal investment size minus losses");
     });
 
     it("loses when bet on the wrong number", async () => {
@@ -125,7 +125,7 @@ contract('roulette', async (accounts) => {
         });
         truffleAssert.eventNotEmitted(callbackTx, 'Payout');
 
-        assert.equal(web3.eth.getBalance(roulette.address).toNumber(), investmentSize + betSize);
+        assert.equal(web3.eth.getBalance(roulette.address).toNumber(), investmentSize + betSize, "Balance should equal investment size plus winnings");
     });
 
     it("pays an oraclize fee when playing the second time", async () => {
@@ -150,7 +150,7 @@ contract('roulette', async (accounts) => {
             return ev.player === bettingAccount && ev.betSize.lt(BigNumber(betSize));
         });
 
-        assert.isBelow(web3.eth.getBalance(roulette.address).toNumber(), investmentSize + 2 * betSize);
+        assert.isBelow(web3.eth.getBalance(roulette.address).toNumber(), investmentSize + 2 * betSize, "Oraclize fee should be deducted from balance");
     })
 
     it("can not bet more than max bet", async () => {
@@ -161,7 +161,7 @@ contract('roulette', async (accounts) => {
 
         // when, then
         await assert.isRejected(roulette.bet(betNumber, {from: bettingAccount, value: betSize}));
-        assert.equal(web3.eth.getBalance(roulette.address).toNumber(), investmentSize);
+        assert.equal(web3.eth.getBalance(roulette.address).toNumber(), investmentSize, "Balance should be the original investment");
     });
 
     it("can not play without betting", async () => {
@@ -171,7 +171,7 @@ contract('roulette', async (accounts) => {
 
         // when, then
         await assert.isRejected(roulette.bet(betNumber, {from: bettingAccount}));
-        assert.equal(web3.eth.getBalance(roulette.address).toNumber(), investmentSize);
+        assert.equal(web3.eth.getBalance(roulette.address).toNumber(), investmentSize, "Balance should be the original investment");
     });
 
 });

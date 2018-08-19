@@ -22,13 +22,13 @@ contract RouletteForTesting is Roulette {
     function bet(uint8 number) external payable whenNotPaused {
         require(msg.value <= maxBet(), "Bet amount can not exceed max bet size");
 
-        uint256 oraclizeFee = oraclize_getPrice("WolframAlpha", ORACLIZE_GAS_LIMIT + safeGas);
+        uint256 oraclizeFee = oraclize_getPrice("WolframAlpha");
         require(msg.value > oraclizeFee, "Bet amount should be higher than oraclize fee");
 
         uint256 betValue = msg.value - oraclizeFee;
 
         emit Bet(msg.sender, betValue, number);
-        bytes32 qid = oraclize_query("WolframAlpha", "random integer between 0 and 0", ORACLIZE_GAS_LIMIT + safeGas);
+        bytes32 qid = oraclize_query("WolframAlpha", "random integer between 0 and 0");
 
         /* Store a player's info to retrieve it in the oraclize callback */
         players[qid] = PlayerInfo(msg.sender, betValue, number);
