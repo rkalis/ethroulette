@@ -10,24 +10,60 @@
     "test": "test"
   },
   "scripts": {
-    "deploy-bridge": "node_modules/ethereum-bridge/bridge.js -H localhost:8545 -a 9 --oar 0x6f485C8BF6fc43eA212E93BBF8ce046C7f1cb475",
     "truffle:compile": "truffle compile",
     "truffle:migrate": "truffle migrate",
     "truffle:test": "truffle test",
+    "ng:test": "ng test --watch=false",
     "test": "truffle test",
-    "prepare": "truffle install"
+    "prepare": "truffle install",
+    "build": "truffle compile",
+    "start": "ng serve"
+  },
+  "dependencies": {
+    "@angular/animations": "^5.2.9",
+    "@angular/cdk": "^5.2.5",
+    "@angular/common": "^5.2.9",
+    "@angular/compiler": "^5.2.9",
+    "@angular/core": "^5.2.9",
+    "@angular/forms": "^5.2.9",
+    "@angular/http": "^5.2.9",
+    "@angular/material": "^5.2.5",
+    "@angular/platform-browser": "^5.2.9",
+    "@angular/platform-browser-dynamic": "^5.2.9",
+    "@angular/platform-server": "^5.2.9",
+    "@angular/router": "^5.2.9",
+    "core-js": "^2.5.4",
+    "dotenv": "^6.0.0",
+    "openzeppelin-solidity": "^1.12.0",
+    "rxjs": "^5.5.8",
+    "truffle-hdwallet-provider": "0.0.6",
+    "web3": "1.0.0-beta.34",
+    "zone.js": "^0.8.23"
   },
   "devDependencies": {
+    "@angular-devkit/core": "^0.4.8",
+    "@angular/cli": "^1.7.3",
+    "@angular/compiler-cli": "^5.2.9",
+    "@angular/language-service": "^4.4.6",
+    "@types/jasmine": "^2.8.6",
+    "@types/jasminewd2": "^2.0.3",
+    "@types/node": "^6.0.103",
     "bignumber.js": "^6.0.0",
     "chai": "^4.1.2",
     "chai-as-promised": "^7.1.1",
-    "ethereum-bridge": "^0.6.1",
-    "lite-server": "^2.4.0",
-    "truffle-assertions": "^0.3.1"
-  },
-  "dependencies": {
-    "dotenv": "^6.0.0",
-    "openzeppelin-solidity": "^1.12.0",
-    "truffle-hdwallet-provider": "0.0.6"
+    "codelyzer": "^3.2.2",
+    "jasmine-core": "^2.99.1",
+    "jasmine-spec-reporter": "^4.2.1",
+    "karma": "^1.7.1",
+    "karma-chrome-launcher": "^2.2.0",
+    "karma-cli": "^1.0.1",
+    "karma-coverage-istanbul-reporter": "^1.4.2",
+    "karma-jasmine": "^1.1.1",
+    "karma-jasmine-html-reporter": "^0.2.2",
+    "truffle-assertions": "^0.3.1",
+    "truffle-contract": "^3.0.4",
+    "ts-node": "^3.3.0",
+    "tslint": "^5.9.1",
+    "typescript": "~2.4.0"
   }
 }
