@@ -1,5 +1,6 @@
 pragma solidity ^0.4.24;
 
+import "./BackingContract.sol";
 import "oraclize-api/contracts/usingOraclize.sol";
 import "openzeppelin-solidity/contracts/token/ERC20/ERC20Basic.sol";
 import "openzeppelin-solidity/contracts/math/SafeMath.sol";
@@ -9,10 +10,8 @@ import "openzeppelin-solidity/contracts/lifecycle/Pausable.sol";
  * @title Roulette
  * @author Rosco Kalis <roscokalis@gmail.com>
  */
-contract Roulette is usingOraclize, ERC20Basic, Pausable {
+contract Roulette is usingOraclize, Pausable, BackingContract {
     using SafeMath for uint256;
-
-    uint256 internal internalTotalSupply;
 
     struct PlayerInfo {
         address player;
@@ -20,99 +19,16 @@ contract Roulette is usingOraclize, ERC20Basic, Pausable {
         uint8 betNumber;
     }
 
-    mapping(address=>uint256) investorBalances;
     mapping(bytes32=>PlayerInfo) players;
 
     event Bet(address indexed player, uint256 betSize, uint8 betNumber);
     event Play(address indexed player, uint256 betSize, uint8 betNumber, uint8 winningNumber);
     event Payout(address indexed winner, uint256 payout);
-    event Invest(address indexed investor, uint256 ethAmount, uint256 tokenPrice, uint256 tokenAmount);
-    event Divest(address indexed investor, uint256 ethAmount, uint256 tokenPrice, uint256 tokenAmount);
-    event Transfer(address indexed from, address indexed to, uint256 value);
 
-    constructor() public {
+    constructor(address roscoinAddress) BackingContract(roscoinAddress) public {
         // Set OAR for use with ethereum-bridge, remove for production
         OAR = OraclizeAddrResolverI(0x6f485C8BF6fc43eA212E93BBF8ce046C7f1cb475);
     }
-
-    /**
-     * @dev Fallback payable function.
-     */
-    function() public payable {}
-
-    // ERC20Basic functions
-
-    /**
-     * @notice Returns the current total token supply.
-     * @return The total token supply.
-     */
-    function totalSupply() public view returns(uint256) {
-        return internalTotalSupply;
-    }
-
-    /**
-     * @notice Retrieves the token balance of an account.
-     * @param who Account whose balance should be retrieved.
-     * @return The account's token balance.
-     */
-    function balanceOf(address who) public view returns (uint256) {
-        return investorBalances[who];
-    }
-
-    /**
-     * @notice Transfers tokens from the account of the caller to a different account.
-     * @dev Emits Transfer event.
-     * @param to Recipient of the tokens.
-     * @param value Amount of tokens to be transferred.
-     * @return True.
-     */
-    function transfer(address to, uint256 value) public returns (bool) {
-        require(value <= investorBalances[msg.sender], "Transfer amount can not be more than balance");
-        require(to != address(0), "Can not transfer tokens to address(0)");
-
-        investorBalances[msg.sender] = investorBalances[msg.sender].sub(value);
-        investorBalances[to] = investorBalances[to].add(value);
-        emit Transfer(msg.sender, to, value);
-        return true;
-    }
-
-    // ///////////////////////
-
-    // Investment functions
-
-    /**
-     * @notice Invests an amount of eth into the casino.
-     * @dev Uses the conversion functions.
-     * @dev Emits Invest event.
-     */
-    function invest() external payable whenNotPaused {
-        require(msg.value > 0, "An investment should be made");
-
-        uint256 tokenAmount = convertEthToToken(msg.value);
-        investorBalances[msg.sender] = investorBalances[msg.sender].add(tokenAmount);
-        internalTotalSupply = internalTotalSupply.add(tokenAmount);
-
-        emit Invest(msg.sender, msg.value, tokenPrice(), tokenAmount);
-    }
-
-    /**
-     * @notice Divests an amount of tokens and withdraws the corresponding eth from the casino.
-     * @dev Uses the conversion functions.
-     * @dev Emits Divest event.
-     * @param tokenAmount The amount of tokens to divest from the contract.
-     */
-    function divest(uint256 tokenAmount) external {
-        require(tokenAmount <= investorBalances[msg.sender], "Can not divest more than investment");
-
-        uint256 ethAmount = convertTokenToEth(tokenAmount);
-        investorBalances[msg.sender] = investorBalances[msg.sender].sub(tokenAmount);
-        internalTotalSupply = internalTotalSupply.sub(tokenAmount);
-        msg.sender.transfer(ethAmount);
-
-        emit Divest(msg.sender, ethAmount, tokenPrice(), tokenAmount);
-    }
-
-    // ///////////////////////
 
     // Betting functions
 
@@ -153,6 +69,7 @@ contract Roulette is usingOraclize, ERC20Basic, Pausable {
         PlayerInfo storage playerInfo = players[qid];
 
         emit Play(playerInfo.player, playerInfo.betSize, playerInfo.betNumber, winningNumber);
+        balanceForBacking = balanceForBacking.add(playerInfo.betSize);
 
         if (playerInfo.betNumber == winningNumber) {
             payout(playerInfo.player, playerInfo.betSize.mul(36));
@@ -173,6 +90,7 @@ contract Roulette is usingOraclize, ERC20Basic, Pausable {
         require(amount > 0, "Payout amount should be more than 0");
         require(amount <= address(this).balance, "Payout amount should not be more than contract balance");
 
+        balanceForBacking = balanceForBacking.sub(amount);
         winner.transfer(amount);
         emit Payout(winner, amount);
     }
@@ -180,17 +98,6 @@ contract Roulette is usingOraclize, ERC20Basic, Pausable {
     // ///////////////////////
 
     // Utility functions
-
-    /**
-     * @notice Returns the token price, which is derived from the balance and total supply.
-     * @return The token price.
-     */
-    function tokenPrice() public view returns (uint256) {
-        if (totalSupply() == 0 || address(this).balance == 0) {
-            return 1 ether;
-        }
-        return address(this).balance.mul(1 ether).div(totalSupply());
-    }
 
     /**
      * @notice Returns the maximum bet (0.5% of balance) for this contract.
@@ -207,22 +114,6 @@ contract Roulette is usingOraclize, ERC20Basic, Pausable {
      */
     function oraclizeFeeEstimate() public view returns (uint256) {
         return 0.004 ether;
-    }
-
-    /**
-     * @notice Converts an amount of eth to an amount of tokens.
-     * @param ethAmount The amount of eth to convert.
-     */
-    function convertEthToToken(uint256 ethAmount) public view returns (uint256) {
-        return ethAmount.mul(1 ether).div(tokenPrice());
-    }
-
-    /**
-     * @notice Converts an amount of tokens to an amount of eth.
-     * @param tokenAmount The amount of tokens to convert.
-     */
-    function convertTokenToEth(uint256 tokenAmount) public view returns (uint256) {
-        return tokenPrice().mul(tokenAmount).div(1 ether);
     }
 
     // ///////////////////////

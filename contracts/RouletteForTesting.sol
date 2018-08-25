@@ -8,12 +8,7 @@ import "./Roulette.sol";
  */
 contract RouletteForTesting is Roulette {
 
-    /**
-     * @notice Kills the contract, can only be executed by the owner.
-     */
-    function kill() external onlyOwner {
-        selfdestruct(owner);
-    }
+    constructor(address roscoinAddress) Roulette(roscoinAddress) public {}
 
     /**
      * @notice Overrides the existing bet function, always takes 1 as winning number.
