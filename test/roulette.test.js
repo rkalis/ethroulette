@@ -57,7 +57,7 @@ contract('Roulette', (accounts) => {
       // when
       await roulette.bet(betNumber, {from: bettingAccount, value: betSize});
       let playEvent = await getFirstEvent(roulette.Play({fromBlock: 'latest'}));
-      let callbackTx = await getTransactionResultForEvent(roulette, playEvent);
+      let callbackTx = await truffleAssert.createTransactionResult(roulette, playEvent.transactionHash);
 
       // then
       truffleAssert.eventEmitted(callbackTx, 'Play', (ev) => {
@@ -77,8 +77,8 @@ contract('Roulette', (accounts) => {
 
       // when
       await roulette.bet(betNumber, {from: bettingAccount, value: betSize});
-      let playEvent = await getFirstEvent(roulette.Play({ fromBlock: 'latest' }));
-      let callbackTx = await getTransactionResultForEvent(roulette, playEvent);
+      let playEvent = await getFirstEvent(roulette.Play({fromBlock: 'latest'}));
+      let callbackTx = await truffleAssert.createTransactionResult(roulette, playEvent.transactionHash);
 
       // then
       truffleAssert.eventEmitted(callbackTx, 'Play', (ev) => {
@@ -114,21 +114,6 @@ contract('Roulette', (accounts) => {
     });
   })
 });
-
-getTransactionResultForEvent = (contract, eventLog) => {
-  return new Promise((resolve, reject) => {
-    let allEvents = contract.allEvents({fromBlock: eventLog.blockNumber, toBlock: eventLog.blockNumber});
-    allEvents.get((error, logs) => {
-      if (error !== null)
-      reject(error);
-      resolve({
-        tx: eventLog.transactionHash,
-        receipt: web3.eth.getTransactionReceipt(eventLog.transactionHash),
-        logs: logs.filter(log => log.transactionHash == eventLog.transactionHash)
-      });
-    })
-  });
-}
 
 getFirstEvent = (_event) => {
   return new Promise((resolve, reject) => {
