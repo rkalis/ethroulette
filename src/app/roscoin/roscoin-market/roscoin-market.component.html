@@ -1,0 +1,35 @@
+<mat-card>
+  <mat-card-header>Balance</mat-card-header>
+  <mat-card-content>
+    <mat-form-field id="address-selector" class="address-field">
+      <mat-select name="account" (selectionChange)="refreshBalance()" [(value)]="model.account" placeholder="Address">
+        <mat-option *ngFor="let account of accounts" [value]="account">{{account}}</mat-option>
+      </mat-select>
+    </mat-form-field>
+
+    <p>You have <span id="balance">{{model.balance}}</span> Roscoins</p>
+  </mat-card-content>
+</mat-card>
+
+<mat-card>
+  <mat-card-header>Buy</mat-card-header>
+  <mat-card-content>
+    <mat-form-field>
+      <input type="text" matInput id="purchaseAmount" placeholder="Purchase Amount In Eth" #purchaseAmount>
+    </mat-form-field>
+
+    <button mat-button id="buy" (click)="buy(purchaseAmount.value)">Buy</button>
+  </mat-card-content>
+</mat-card>
+
+<mat-card>
+    <mat-card-header>Sell</mat-card-header>
+    <mat-card-content>
+      <mat-form-field>
+        <input type="text" matInput id="saleAmount" placeholder="Sale Amount In Roscoins" #saleAmount>
+      </mat-form-field>
+
+      <button mat-button id="sell" (click)="sell(saleAmount.value)">Sell</button>
+    </mat-card-content>
+  </mat-card>
+

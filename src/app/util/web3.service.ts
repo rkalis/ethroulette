@@ -1,6 +1,8 @@
-import {Injectable} from '@angular/core';
+import { Injectable } from '@angular/core';
 import * as contract from 'truffle-contract';
-import {Subject} from 'rxjs/Rx';
+import { Subject } from 'rxjs/Rx';
+import { BigNumber } from 'bignumber.js';
+
 declare let require: any;
 const Web3 = require('web3');
 
@@ -11,7 +13,6 @@ export class Web3Service {
   private web3: any;
   private accounts: string[];
   public ready = false;
-  public MetaCoin: any;
   public accountsObservable = new Subject<string[]>();
 
   constructor() {
@@ -35,6 +36,14 @@ export class Web3Service {
     }
 
     setInterval(() => this.refreshAccounts(), 100);
+  }
+
+  public toWei(amount: number, unit: string) {
+    return this.web3.utils.toWei(amount.toString(), unit);
+  }
+
+  public fromWei(amount: BigNumber, unit: string) {
+    return this.web3.utils.fromWei(amount.toString(), unit);
   }
 
   public async artifactsToContract(artifacts) {

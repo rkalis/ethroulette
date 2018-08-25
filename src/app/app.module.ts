@@ -1,3 +1,4 @@
+import { RoscoinModule } from './roscoin/roscoin.module';
 import { BrowserModule } from '@angular/platform-browser';
 import { NgModule } from '@angular/core';
 import { FormsModule } from '@angular/forms';
@@ -12,6 +13,7 @@ import {
   MatCardModule,
   MatFormFieldModule,
   MatInputModule,
+  MatTabsModule,
   MatToolbarModule
 } from '@angular/material';
 
@@ -26,10 +28,12 @@ import {
     MatCardModule,
     MatFormFieldModule,
     MatInputModule,
+    MatTabsModule,
     MatToolbarModule,
     BrowserModule,
     FormsModule,
     HttpModule,
+    RoscoinModule,
     RouletteModule
   ],
   providers: [],

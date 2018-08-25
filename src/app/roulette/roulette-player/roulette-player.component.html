@@ -1,13 +1,11 @@
 <mat-card>
-  <mat-card-header>Balance</mat-card-header>
+  <mat-card-header>Account</mat-card-header>
   <mat-card-content>
     <mat-form-field id="address-selector" class="address-field">
       <mat-select name="account" (selectionChange)="refreshBalance()" [(value)]="model.account" placeholder="Address">
         <mat-option *ngFor="let account of accounts" [value]="account">{{account}}</mat-option>
       </mat-select>
     </mat-form-field>
-
-    <p>You have <span id="balance">{{model.balance}}</span> Roscoins </p>
   </mat-card-content>
 </mat-card>
 
@@ -20,31 +18,6 @@
     <mat-form-field>
       <input type="text" matInput id="betAmount" placeholder="Bet Amount" #betAmount>
     </mat-form-field>
-
     <button mat-button id="bet" (click)="bet(betNumber.value, betAmount.value)">Bet</button>
   </mat-card-content>
 </mat-card>
-
-
-<mat-card>
-  <mat-card-header>Invest</mat-card-header>
-  <mat-card-content>
-    <mat-form-field>
-      <input type="text" matInput id="investAmount" placeholder="Investment Amount In Eth" #investAmount>
-    </mat-form-field>
-
-    <button mat-button id="invest" (click)="invest(investAmount.value)">Invest</button>
-  </mat-card-content>
-</mat-card>
-
-<mat-card>
-    <mat-card-header>Divest</mat-card-header>
-    <mat-card-content>
-      <mat-form-field>
-        <input type="text" matInput id="divestAmount" placeholder="Divestment Amount In Roscoins" #divestAmount>
-      </mat-form-field>
-
-      <button mat-button id="divest" (click)="divest(divestAmount.value)">Divest</button>
-    </mat-card-content>
-  </mat-card>
-

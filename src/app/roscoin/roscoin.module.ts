@@ -2,7 +2,7 @@ import { NgModule } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { UtilModule } from '../util/util.module';
 import { RouterModule } from '@angular/router';
-import { RoulettePlayerComponent } from './roulette-player/roulette-player.component';
+import { RoscoinMarketComponent } from './roscoin-market/roscoin-market.component';
 import {
   MatButtonModule,
   MatCardModule,
@@ -27,7 +27,7 @@ import { BrowserAnimationsModule } from '@angular/platform-browser/animations';
     RouterModule,
     UtilModule
   ],
-  declarations: [RoulettePlayerComponent],
-  exports: [RoulettePlayerComponent]
+  declarations: [RoscoinMarketComponent],
+  exports: [RoscoinMarketComponent]
 })
-export class RouletteModule {}
+export class RoscoinModule {}
