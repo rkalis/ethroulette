@@ -1,8 +1,7 @@
-import { AccountService } from './service/account.service';
+import { SharedModule } from './../shared/shared.module';
 import { AccountSelectorComponent } from './account-selector/account-selector.component';
 import { NgModule } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { UtilModule } from '../util/util.module';
 import { RouterModule } from '@angular/router';
 import {
   MatButtonModule,
@@ -27,12 +26,10 @@ import { BrowserAnimationsModule } from '@angular/platform-browser/animations';
     MatSelectModule,
     MatSnackBarModule,
     RouterModule,
-    UtilModule
+    SharedModule
   ],
   declarations: [AccountSelectorComponent],
   exports: [AccountSelectorComponent],
-  providers: [
-    AccountService
-  ]
+  providers: []
 })
 export class AccountModule {}

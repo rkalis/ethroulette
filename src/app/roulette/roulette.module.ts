@@ -1,6 +1,6 @@
+import { SharedModule } from './../shared/shared.module';
 import { NgModule } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { UtilModule } from '../util/util.module';
 import { RouterModule } from '@angular/router';
 import { RoulettePlayerComponent } from './roulette-player/roulette-player.component';
 import {
@@ -29,7 +29,7 @@ import { BetHistoryComponent } from './bet-history/bet-history.component';
     MatTableModule,
     MatSnackBarModule,
     RouterModule,
-    UtilModule
+    SharedModule
   ],
   declarations: [RoulettePlayerComponent, BetHistoryComponent],
   exports: [RoulettePlayerComponent, BetHistoryComponent]

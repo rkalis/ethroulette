@@ -1,4 +1,4 @@
-import { Web3Service } from '../../util/web3.service';
+import { Web3Service } from './web3.service';
 import { Injectable, OnInit } from '@angular/core';
 import { Subject } from 'rxjs/Rx';
 

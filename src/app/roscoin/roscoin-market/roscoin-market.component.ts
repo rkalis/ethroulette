@@ -1,8 +1,8 @@
-import { AccountService } from './../../account/service/account.service';
-import { environment } from './../../../environments/environment';
+import { StatusService } from './../../shared/status.service';
+import { BigNumber } from 'bignumber.js';
+import { AccountService } from '../../shared/account.service';
 import { Component, OnInit } from '@angular/core';
-import { Web3Service } from '../../util/web3.service';
-import { MatSnackBar } from '@angular/material';
+import { Web3Service } from '../../shared/web3.service';
 
 declare let require: any;
 const roscoin_artifacts = require('../../../../build/contracts/Roscoin.json');
@@ -22,7 +22,7 @@ export class RoscoinMarketComponent implements OnInit {
   constructor(
     private web3Service: Web3Service,
     private accountService: AccountService,
-    private matSnackBar: MatSnackBar
+    private statusService: StatusService
   ) {}
 
   ngOnInit(): void {
@@ -38,7 +38,7 @@ export class RoscoinMarketComponent implements OnInit {
       }).catch((error) => {
         console.log('Roscoin artifacts could not be loaded or deployed Roscoin contract could not be found.');
         console.log(error);
-        this.setStatus('Error connecting with Roscoin contract; see log.');
+        this.statusService.showStatus('Error connecting with Roscoin contract; see log.');
       });
   }
 
@@ -48,59 +48,55 @@ export class RoscoinMarketComponent implements OnInit {
     });
   }
 
-  setStatus(status) {
-    this.matSnackBar.open(status, null, {duration: 3000});
-  }
-
   async buy(purchaseAmountInEth: number) {
     if (!this.deployedRoscoin) {
-      this.setStatus('Roscoin contract is not available');
+      this.statusService.showStatus('Roscoin contract is not available');
       return;
     }
 
     const purchaseAmountInWei = this.web3Service.toWei(purchaseAmountInEth, 'ether');
     console.log('Buying ' + purchaseAmountInEth + ' Roscoins');
 
-    this.setStatus('Initiating transaction... (please wait)');
+    this.statusService.showStatus('Initiating transaction... (please wait)');
 
     try {
       const tx = await this.deployedRoscoin.buy({from: this.accountService.account, value: purchaseAmountInWei});
       this.refreshBalance();
 
       if (!tx) {
-        this.setStatus('Transaction failed, purchase not completed');
+        this.statusService.showStatus('Transaction failed, purchase not completed');
       } else {
-        this.setStatus('Transaction complete, purchase completed');
+        this.statusService.showStatus('Transaction complete, purchase completed');
       }
     } catch (e) {
       console.log(e);
-      this.setStatus('Error purchasing; see log.');
+      this.statusService.showStatus('Error purchasing; see log.');
     }
   }
 
   async sell(saleAmountInRoscoin: number) {
     if (!this.deployedRoscoin) {
-      this.setStatus('Roscoin contract is not available');
+      this.statusService.showStatus('Roscoin contract is not available');
       return;
     }
 
     const saleAmountInWei = this.web3Service.toWei(saleAmountInRoscoin, 'ether');
     console.log('Selling ' + saleAmountInRoscoin + ' Roscoins');
 
-    this.setStatus('Initiating transaction... (please wait)');
+    this.statusService.showStatus('Initiating transaction... (please wait)');
 
     try {
       const tx = await this.deployedRoscoin.sell(saleAmountInWei, {from: this.accountService.account});
       this.refreshBalance();
 
       if (!tx) {
-        this.setStatus('Transaction failed, sale not completed');
+        this.statusService.showStatus('Transaction failed, sale not completed');
       } else {
-        this.setStatus('Transaction complete, sale completed');
+        this.statusService.showStatus('Transaction complete, sale completed');
       }
     } catch (e) {
       console.log(e);
-      this.setStatus('Error selling; see log.');
+      this.statusService.showStatus('Error selling; see log.');
     }
   }
 
@@ -114,7 +110,7 @@ export class RoscoinMarketComponent implements OnInit {
       this.balance = roscoinBalance;
     } catch (e) {
       console.log(e);
-      this.setStatus('Error getting balance; see log.');
+      this.statusService.showStatus('Error getting balance; see log.');
     }
   }
 }

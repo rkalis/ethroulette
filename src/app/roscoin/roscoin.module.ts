@@ -1,6 +1,6 @@
+import { SharedModule } from './../shared/shared.module';
 import { NgModule } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { UtilModule } from '../util/util.module';
 import { RouterModule } from '@angular/router';
 import { RoscoinMarketComponent } from './roscoin-market/roscoin-market.component';
 import {
@@ -9,7 +9,8 @@ import {
   MatFormFieldModule,
   MatInputModule,
   MatOptionModule,
-  MatSelectModule, MatSnackBarModule
+  MatSelectModule,
+  MatSnackBarModule
 } from '@angular/material';
 import { BrowserAnimationsModule } from '@angular/platform-browser/animations';
 
@@ -25,7 +26,7 @@ import { BrowserAnimationsModule } from '@angular/platform-browser/animations';
     MatSelectModule,
     MatSnackBarModule,
     RouterModule,
-    UtilModule
+    SharedModule
   ],
   declarations: [RoscoinMarketComponent],
   exports: [RoscoinMarketComponent]

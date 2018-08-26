@@ -1,8 +1,8 @@
-import { AccountService } from './../../account/service/account.service';
+import { StatusService } from './../../shared/status.service';
+import { AccountService } from '../../shared/account.service';
 import { Subject } from 'rxjs/Rx';
-import { environment } from '../../../environments/environment';
 import { Component, OnInit, ChangeDetectorRef } from '@angular/core';
-import { Web3Service } from '../../util/web3.service';
+import { Web3Service } from '../../shared/web3.service';
 import { MatSnackBar, MatTableDataSource } from '@angular/material';
 
 declare let require: any;
@@ -42,7 +42,7 @@ export class BetHistoryComponent implements OnInit {
   constructor(
     private web3Service: Web3Service,
     private accountService: AccountService,
-    private matSnackBar: MatSnackBar,
+    private statusService: StatusService,
     private changeDetectorRef: ChangeDetectorRef
   ) {}
 
@@ -59,7 +59,7 @@ export class BetHistoryComponent implements OnInit {
       }).catch((error) => {
         console.log('Roulette artifacts could not be loaded or deployed Roulette contract could not be found.');
         console.log(error);
-        this.setStatus('Error connecting with Roulette contract; see log.');
+        this.statusService.showStatus('Error connecting with Roulette contract; see log.');
       });
   }
 
@@ -113,10 +113,6 @@ export class BetHistoryComponent implements OnInit {
 
   findBetIndexById(id: string): number {
     return this.bets.findIndex((bet) => bet.id === id);
-  }
-
-  setStatus(status): void {
-    this.matSnackBar.open(status, null, {duration: 3000});
   }
 
   currentBets(): Bet[] {
