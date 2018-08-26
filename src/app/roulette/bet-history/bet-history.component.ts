@@ -1,9 +1,9 @@
 import { StatusService } from './../../shared/status.service';
-import { AccountService } from '../../shared/account.service';
+import { AccountService } from '../../core/account.service';
 import { Subject } from 'rxjs/Rx';
 import { Component, OnInit, ChangeDetectorRef } from '@angular/core';
-import { Web3Service } from '../../shared/web3.service';
-import { MatSnackBar, MatTableDataSource } from '@angular/material';
+import { Web3Service } from '../../core/web3.service';
+import { MatTableDataSource } from '@angular/material';
 
 declare let require: any;
 const roulette_artifacts = require('../../../../build/contracts/Roulette.json');

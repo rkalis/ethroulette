@@ -1,8 +1,8 @@
 import { StatusService } from './../../shared/status.service';
 import { BigNumber } from 'bignumber.js';
-import { AccountService } from '../../shared/account.service';
+import { AccountService } from '../../core/account.service';
 import { Component, OnInit } from '@angular/core';
-import { Web3Service } from '../../shared/web3.service';
+import { Web3Service } from '../../core/web3.service';
 
 declare let require: any;
 const roscoin_artifacts = require('../../../../build/contracts/Roscoin.json');
