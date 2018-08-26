@@ -1,10 +1,12 @@
+import { AccountService } from './../../account/service/account.service';
+import { Subject } from 'rxjs/Rx';
 import { environment } from './../../../environments/environment';
-import { Component, OnInit } from '@angular/core';
+import { Component, OnInit, ChangeDetectorRef } from '@angular/core';
 import { Web3Service } from '../../util/web3.service';
-import { MatSnackBar } from '@angular/material';
+import { MatSnackBar, MatTableDataSource } from '@angular/material';
 
 declare let require: any;
-const roulette_artifacts = require(environment.artifacts_directory + 'Roulette.json');
+const roulette_artifacts = require('../../../../build/contracts/Roulette.json');
 
 @Component({
   selector: 'app-roulette-player',
@@ -16,21 +18,15 @@ export class RoulettePlayerComponent implements OnInit {
   Roulette: any;
   deployedRoulette: any;
 
-  model = {
-    balance: 0,
-    account: ''
-  };
-
-  status = '';
-
-  constructor(private web3Service: Web3Service, private matSnackBar: MatSnackBar) {
-    console.log('Constructor: ' + web3Service);
+  constructor(
+    private web3Service: Web3Service,
+    private accountService: AccountService,
+    private matSnackBar: MatSnackBar
+  ) {
   }
 
   ngOnInit(): void {
-    console.log('OnInit: ' + this.web3Service);
     console.log(this);
-    this.watchAccount();
 
     this.web3Service.artifactsToContract(roulette_artifacts)
       .then((RouletteAbstraction) => {
@@ -43,13 +39,6 @@ export class RoulettePlayerComponent implements OnInit {
         console.log(error);
         this.setStatus('Error connecting with Roulette contract; see log.');
       });
-  }
-
-  watchAccount() {
-    this.web3Service.accountsObservable.subscribe((accounts) => {
-      this.accounts = accounts;
-      this.model.account = accounts[0];
-    });
   }
 
   setStatus(status) {
@@ -68,7 +57,7 @@ export class RoulettePlayerComponent implements OnInit {
     this.setStatus('Initiating transaction... (please wait)');
 
     try {
-      const tx = await this.deployedRoulette.bet(number, {from: this.model.account, value: betSizeInWei});
+      const tx = await this.deployedRoulette.bet(number, {from: this.accountService.account, value: betSizeInWei});
 
       if (!tx) {
         this.setStatus('Transaction failed, bet has not been placed');

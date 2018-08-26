@@ -1,13 +1,7 @@
 <mat-card>
   <mat-card-header>Balance</mat-card-header>
   <mat-card-content>
-    <mat-form-field id="address-selector" class="address-field">
-      <mat-select name="account" (selectionChange)="refreshBalance()" [(value)]="model.account" placeholder="Address">
-        <mat-option *ngFor="let account of accounts" [value]="account">{{account}}</mat-option>
-      </mat-select>
-    </mat-form-field>
-
-    <p>You have <span id="balance">{{model.balance}}</span> Roscoins</p>
+    <p>You have <span id="balance">{{balance}}</span> Roscoins</p>
   </mat-card-content>
 </mat-card>
 

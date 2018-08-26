@@ -16,6 +16,7 @@ export class Web3Service {
   public accountsObservable = new Subject<string[]>();
 
   constructor() {
+    console.log(this);
     window.addEventListener('load', (event) => {
       this.bootstrapWeb3();
     });

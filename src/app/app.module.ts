@@ -1,3 +1,4 @@
+import { AccountModule } from './account/account.module';
 import { RoscoinModule } from './roscoin/roscoin.module';
 import { BrowserModule } from '@angular/platform-browser';
 import { NgModule } from '@angular/core';
@@ -34,7 +35,8 @@ import {
     FormsModule,
     HttpModule,
     RoscoinModule,
-    RouletteModule
+    RouletteModule,
+    AccountModule
   ],
   providers: [],
   bootstrap: [AppComponent]

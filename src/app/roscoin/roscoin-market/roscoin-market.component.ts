@@ -1,10 +1,11 @@
+import { AccountService } from './../../account/service/account.service';
 import { environment } from './../../../environments/environment';
 import { Component, OnInit } from '@angular/core';
 import { Web3Service } from '../../util/web3.service';
 import { MatSnackBar } from '@angular/material';
 
 declare let require: any;
-const roscoin_artifacts = require(environment.artifacts_directory + 'Roscoin.json');
+const roscoin_artifacts = require('../../../../build/contracts/Roscoin.json');
 
 @Component({
   selector: 'app-roscoin-market',
@@ -16,21 +17,16 @@ export class RoscoinMarketComponent implements OnInit {
   Roscoin: any;
   deployedRoscoin: any;
 
-  model = {
-    balance: 0,
-    account: ''
-  };
+  balance: number;
 
-  status = '';
-
-  constructor(private web3Service: Web3Service, private matSnackBar: MatSnackBar) {
-    console.log('Constructor: ' + web3Service);
-  }
+  constructor(
+    private web3Service: Web3Service,
+    private accountService: AccountService,
+    private matSnackBar: MatSnackBar
+  ) {}
 
   ngOnInit(): void {
-    console.log('OnInit: ' + this.web3Service);
     console.log(this);
-    this.watchAccount();
 
     this.web3Service.artifactsToContract(roscoin_artifacts)
       .then((RoscoinAbstraction) => {
@@ -38,6 +34,7 @@ export class RoscoinMarketComponent implements OnInit {
         return this.Roscoin.deployed();
       }).then((deployedRoscoin) => {
         this.deployedRoscoin = deployedRoscoin;
+        this.watchAccount();
       }).catch((error) => {
         console.log('Roscoin artifacts could not be loaded or deployed Roscoin contract could not be found.');
         console.log(error);
@@ -46,9 +43,8 @@ export class RoscoinMarketComponent implements OnInit {
   }
 
   watchAccount() {
-    this.web3Service.accountsObservable.subscribe((accounts) => {
-      this.accounts = accounts;
-      this.model.account = accounts[0];
+    this.accountService.accountObservable.subscribe((account) => {
+      this.refreshBalance();
     });
   }
 
@@ -68,7 +64,7 @@ export class RoscoinMarketComponent implements OnInit {
     this.setStatus('Initiating transaction... (please wait)');
 
     try {
-      const tx = await this.deployedRoscoin.buy({from: this.model.account, value: purchaseAmountInWei});
+      const tx = await this.deployedRoscoin.buy({from: this.accountService.account, value: purchaseAmountInWei});
       this.refreshBalance();
 
       if (!tx) {
@@ -94,7 +90,7 @@ export class RoscoinMarketComponent implements OnInit {
     this.setStatus('Initiating transaction... (please wait)');
 
     try {
-      const tx = await this.deployedRoscoin.sell(saleAmountInWei, {from: this.model.account});
+      const tx = await this.deployedRoscoin.sell(saleAmountInWei, {from: this.accountService.account});
       this.refreshBalance();
 
       if (!tx) {
@@ -108,14 +104,14 @@ export class RoscoinMarketComponent implements OnInit {
     }
   }
 
-  async refreshBalance() {
+  refreshBalance = async () => {
     console.log('Refreshing balance');
     try {
-      console.log('Account: ', this.model.account);
-      const roscoinBalanceInWei: BigNumber = await this.deployedRoscoin.balanceOf(this.model.account);
+      console.log('Account: ', this.accountService.account);
+      const roscoinBalanceInWei: BigNumber = await this.deployedRoscoin.balanceOf(this.accountService.account);
       const roscoinBalance = this.web3Service.fromWei(roscoinBalanceInWei, 'ether');
       console.log('Found balance: ' + roscoinBalance);
-      this.model.balance = roscoinBalance;
+      this.balance = roscoinBalance;
     } catch (e) {
       console.log(e);
       this.setStatus('Error getting balance; see log.');
