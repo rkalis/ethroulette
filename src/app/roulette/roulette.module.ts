@@ -9,9 +9,12 @@ import {
   MatFormFieldModule,
   MatInputModule,
   MatOptionModule,
-  MatSelectModule, MatSnackBarModule
+  MatSelectModule,
+  MatSnackBarModule,
+  MatTableModule
 } from '@angular/material';
 import { BrowserAnimationsModule } from '@angular/platform-browser/animations';
+import { BetHistoryComponent } from './bet-history/bet-history.component';
 
 @NgModule({
   imports: [
@@ -23,11 +26,12 @@ import { BrowserAnimationsModule } from '@angular/platform-browser/animations';
     MatInputModule,
     MatOptionModule,
     MatSelectModule,
+    MatTableModule,
     MatSnackBarModule,
     RouterModule,
     UtilModule
   ],
-  declarations: [RoulettePlayerComponent],
-  exports: [RoulettePlayerComponent]
+  declarations: [RoulettePlayerComponent, BetHistoryComponent],
+  exports: [RoulettePlayerComponent, BetHistoryComponent]
 })
 export class RouletteModule {}
