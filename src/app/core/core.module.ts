@@ -2,6 +2,7 @@ import { AccountService } from './account.service';
 import { Web3Service } from './web3.service';
 import { NgModule } from '@angular/core';
 import { CommonModule } from '@angular/common';
+import { ContractService } from './contract.service';
 
 @NgModule({
   imports: [
@@ -10,7 +11,8 @@ import { CommonModule } from '@angular/common';
   declarations: [],
   providers: [
     Web3Service,
-    AccountService
+    AccountService,
+    ContractService
   ]
 })
 export class CoreModule { }

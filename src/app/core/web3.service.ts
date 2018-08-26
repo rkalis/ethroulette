@@ -1,6 +1,6 @@
 import { Injectable } from '@angular/core';
 import * as contract from 'truffle-contract';
-import { Subject } from 'rxjs/Rx';
+import { Subject, BehaviorSubject } from 'rxjs/Rx';
 import { BigNumber } from 'bignumber.js';
 
 declare let require: any;
@@ -12,14 +12,21 @@ declare let window: any;
 export class Web3Service {
   private web3: any;
   private accounts: string[];
-  public ready = false;
+  public _ready: Promise<any>;
   public accountsObservable = new Subject<string[]>();
 
   constructor() {
     console.log(this);
+    this._ready = new Promise((resolve, reject) => {
     window.addEventListener('load', (event) => {
       this.bootstrapWeb3();
+        return resolve();
+      });
     });
+  }
+
+  ready(): Promise<any> {
+    return this._ready;
   }
 
   public bootstrapWeb3() {
@@ -80,8 +87,6 @@ export class Web3Service {
         this.accountsObservable.next(accs);
         this.accounts = accs;
       }
-
-      this.ready = true;
     });
   }
 }
