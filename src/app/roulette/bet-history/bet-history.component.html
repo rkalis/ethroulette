@@ -48,8 +48,12 @@
         <mat-header-cell *matHeaderCellDef> Winning Number </mat-header-cell>
         <mat-cell *matCellDef="let bet"> {{bet.winningNumber}} </mat-cell>
       </ng-container>
-      <mat-header-row *matHeaderRowDef="['betSize', 'blockNumber', 'betNumber', 'winningNumber']"></mat-header-row>
-      <mat-row *matRowDef="let row; columns: ['betSize', 'blockNumber', 'betNumber', 'winningNumber']"></mat-row>
+      <ng-container matColumnDef="payout">
+        <mat-header-cell *matHeaderCellDef> Payout </mat-header-cell>
+        <mat-cell *matCellDef="let bet"> {{bet.payout}} </mat-cell>
+      </ng-container>
+      <mat-header-row *matHeaderRowDef="['betSize', 'blockNumber', 'betNumber', 'winningNumber', 'payout']"></mat-header-row>
+      <mat-row *matRowDef="let row; columns: ['betSize', 'blockNumber', 'betNumber', 'winningNumber', 'payout']"></mat-row>
     </mat-table>
   </mat-card-content>
 </mat-card>

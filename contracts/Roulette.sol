@@ -21,9 +21,9 @@ contract Roulette is usingOraclize, Pausable, BackingContract {
 
     mapping(bytes32=>PlayerInfo) players;
 
-    event Bet(address indexed player, uint256 betSize, uint8 betNumber, bytes32 qid);
-    event Play(address indexed player, uint256 betSize, uint8 betNumber, uint8 winningNumber, bytes32 qid);
-    event Payout(address indexed winner, uint256 payout);
+    event Bet(address indexed player, bytes32 qid, uint256 betSize, uint8 betNumber);
+    event Play(address indexed player, bytes32 qid, uint256 betSize, uint8 betNumber, uint8 winningNumber);
+    event Payout(address indexed winner, bytes32 qid, uint256 payout);
 
     constructor(address roscoinAddress) BackingContract(roscoinAddress) public {
         // Set OAR for use with ethereum-bridge, remove for production
@@ -51,7 +51,7 @@ contract Roulette is usingOraclize, Pausable, BackingContract {
 
         /* Store a player's info to retrieve it in the oraclize callback */
         players[qid] = PlayerInfo(msg.sender, betValue, number);
-        emit Bet(msg.sender, betValue, number, qid);
+        emit Bet(msg.sender, qid, betValue, number);
     }
 
     /**
@@ -68,11 +68,11 @@ contract Roulette is usingOraclize, Pausable, BackingContract {
         uint8 winningNumber = uint8(parseInt(result));
         PlayerInfo storage playerInfo = players[qid];
 
-        emit Play(playerInfo.player, playerInfo.betSize, playerInfo.betNumber, winningNumber, qid);
+        emit Play(playerInfo.player, qid, playerInfo.betSize, playerInfo.betNumber, winningNumber);
         balanceForBacking = balanceForBacking.add(playerInfo.betSize);
 
         if (playerInfo.betNumber == winningNumber) {
-            payout(playerInfo.player, playerInfo.betSize.mul(36));
+            payout(playerInfo.player, qid, playerInfo.betSize.mul(36));
         }
 
         // TODO: Perhaps delete this info before sending payout (reentrancy)
@@ -84,15 +84,16 @@ contract Roulette is usingOraclize, Pausable, BackingContract {
      * @dev Updates token price according to value change.
      * @dev Emits Payout event.
      * @param winner The account of the bet winner.
+     * @param qid The game for which the payout is made
      * @param amount The amount to be paid out to the bet winner.
      */
-    function payout(address winner, uint256 amount) internal whenNotPaused {
+    function payout(address winner, bytes32 qid, uint256 amount) internal whenNotPaused {
         require(amount > 0, "Payout amount should be more than 0");
         require(amount <= address(this).balance, "Payout amount should not be more than contract balance");
 
         balanceForBacking = balanceForBacking.sub(amount);
         winner.transfer(amount);
-        emit Payout(winner, amount);
+        emit Payout(winner, qid, amount);
     }
 
     // ///////////////////////

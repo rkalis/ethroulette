@@ -1,11 +1,9 @@
+import { ContractService } from './../../core/contract.service';
 import { StatusService } from './../../shared/status.service';
 import { BigNumber } from 'bignumber.js';
 import { AccountService } from '../../core/account.service';
 import { Component, OnInit } from '@angular/core';
 import { Web3Service } from '../../core/web3.service';
-
-declare let require: any;
-const roscoin_artifacts = require('../../../../build/contracts/Roscoin.json');
 
 @Component({
   selector: 'app-roscoin-market',
@@ -14,14 +12,13 @@ const roscoin_artifacts = require('../../../../build/contracts/Roscoin.json');
 })
 export class RoscoinMarketComponent implements OnInit {
   accounts: string[];
-  Roscoin: any;
-  deployedRoscoin: any;
 
   balance: number;
   currentPrice: number;
 
   constructor(
     private web3Service: Web3Service,
+    private contractService: ContractService,
     private accountService: AccountService,
     private statusService: StatusService
   ) {}
@@ -29,19 +26,15 @@ export class RoscoinMarketComponent implements OnInit {
   ngOnInit(): void {
     console.log(this);
 
-    this.web3Service.artifactsToContract(roscoin_artifacts)
-      .then((RoscoinAbstraction) => {
-        this.Roscoin = RoscoinAbstraction;
-        return this.Roscoin.deployed();
-      }).then((deployedRoscoin) => {
-        this.deployedRoscoin = deployedRoscoin;
-        this.watchAccount();
-        this.refreshPrice();
-      }).catch((error) => {
-        console.log('Roscoin artifacts could not be loaded or deployed Roscoin contract could not be found.');
-        console.log(error);
-        this.statusService.showStatus('Error connecting with Roscoin contract; see log.');
-      });
+    this.contractService.ready().then(() => {
+      return this.accountService.ready();
+    }).then(() => {
+      this.watchAccount();
+      this.refreshPrice();
+    }).catch((error) => {
+      console.log(error);
+      this.statusService.showStatus('Error connecting with smart contracts; see log.');
+    });
   }
 
   watchAccount() {
@@ -51,7 +44,8 @@ export class RoscoinMarketComponent implements OnInit {
   }
 
   async buy(purchaseAmountInEth: number) {
-    if (!this.deployedRoscoin) {
+    const deployedRoscoin = this.contractService.getDeployedContract('Roscoin');
+    if (!deployedRoscoin) {
       this.statusService.showStatus('Roscoin contract is not available');
       return;
     }
@@ -62,7 +56,7 @@ export class RoscoinMarketComponent implements OnInit {
     this.statusService.showStatus('Initiating transaction... (please wait)');
 
     try {
-      const tx = await this.deployedRoscoin.buy({from: this.accountService.account, value: purchaseAmountInWei});
+      const tx = await deployedRoscoin.buy({from: this.accountService.account, value: purchaseAmountInWei});
       this.refreshBalance();
 
       if (!tx) {
@@ -70,14 +64,15 @@ export class RoscoinMarketComponent implements OnInit {
       } else {
         this.statusService.showStatus('Transaction complete, purchase completed');
       }
-    } catch (e) {
-      console.log(e);
+    } catch (error) {
+      console.log(error);
       this.statusService.showStatus('Error purchasing; see log.');
     }
   }
 
   async sell(saleAmountInRoscoin: number) {
-    if (!this.deployedRoscoin) {
+    const deployedRoscoin = this.contractService.getDeployedContract('Roscoin');
+    if (!deployedRoscoin) {
       this.statusService.showStatus('Roscoin contract is not available');
       return;
     }
@@ -88,7 +83,7 @@ export class RoscoinMarketComponent implements OnInit {
     this.statusService.showStatus('Initiating transaction... (please wait)');
 
     try {
-      const tx = await this.deployedRoscoin.sell(saleAmountInWei, {from: this.accountService.account});
+      const tx = await deployedRoscoin.sell(saleAmountInWei, {from: this.accountService.account});
       this.refreshBalance();
 
       if (!tx) {
@@ -96,35 +91,37 @@ export class RoscoinMarketComponent implements OnInit {
       } else {
         this.statusService.showStatus('Transaction complete, sale completed');
       }
-    } catch (e) {
-      console.log(e);
+    } catch (error) {
+      console.log(error);
       this.statusService.showStatus('Error selling; see log.');
     }
   }
 
   refreshBalance = async () => {
+    const deployedRoscoin = this.contractService.getDeployedContract('Roscoin');
     console.log('Refreshing balance');
     try {
       console.log('Account: ', this.accountService.account);
-      const roscoinBalanceInWei: BigNumber = await this.deployedRoscoin.balanceOf(this.accountService.account);
+      const roscoinBalanceInWei: BigNumber = await deployedRoscoin.balanceOf(this.accountService.account);
       const roscoinBalance = this.web3Service.fromWei(roscoinBalanceInWei, 'ether');
       console.log('Found balance: ' + roscoinBalance);
       this.balance = roscoinBalance;
-    } catch (e) {
-      console.log(e);
+    } catch (error) {
+      console.log(error);
       this.statusService.showStatus('Error getting balance; see log.');
     }
   }
 
   refreshPrice = async () => {
+    const deployedRoscoin = this.contractService.getDeployedContract('Roscoin');
     console.log('Refreshing price');
     try {
-      const tokenPriceInWei: BigNumber = await this.deployedRoscoin.tokenPrice();
+      const tokenPriceInWei: BigNumber = await deployedRoscoin.tokenPrice();
       const tokenPrice = this.web3Service.fromWei(tokenPriceInWei, 'ether');
       console.log('Found price: ' + tokenPrice);
       this.currentPrice = tokenPrice;
-    } catch (e) {
-      console.log(e);
+    } catch (error) {
+      console.log(error);
       this.statusService.showStatus('Error getting token price; see log.');
     }
   }

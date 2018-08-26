@@ -26,7 +26,7 @@ contract RouletteForTesting is Roulette {
 
         /* Store a player's info to retrieve it in the oraclize callback */
         players[qid] = PlayerInfo(msg.sender, betValue, number);
-        emit Bet(msg.sender, betValue, number, qid);
+        emit Bet(msg.sender, qid, betValue, number);
     }
 
     // /**

@@ -1,3 +1,4 @@
+import { ContractService } from './../../core/contract.service';
 import { StatusService } from './../../shared/status.service';
 import { AccountService } from '../../core/account.service';
 import { Subject } from 'rxjs/Rx';
@@ -5,22 +6,28 @@ import { Component, OnInit, ChangeDetectorRef } from '@angular/core';
 import { Web3Service } from '../../core/web3.service';
 import { MatTableDataSource } from '@angular/material';
 
-declare let require: any;
-const roulette_artifacts = require('../../../../build/contracts/Roulette.json');
-
 export class Bet {
   id: string;
   blockNumber: number;
   betSize: number;
   betNumber: number;
   winningNumber: number;
+  payout: number;
 
-  constructor(id: string, blockNumber: number, betSize: number, betNumber: number, winningNumber: number) {
+  constructor(
+    id: string,
+    blockNumber: number,
+    betSize: number,
+    betNumber: number,
+    winningNumber: number,
+    payout: number
+  ) {
     this.id = id;
     this.blockNumber = blockNumber;
     this.betSize = betSize;
     this.betNumber = betNumber;
     this.winningNumber = winningNumber;
+    this.payout = payout;
   }
 }
 @Component({
@@ -29,18 +36,13 @@ export class Bet {
   styleUrls: ['./bet-history.component.css']
 })
 export class BetHistoryComponent implements OnInit {
-  Roulette: any;
-  deployedRoulette: any;
-
   betsDataSource: MatTableDataSource<Bet>;
   currentBetsDataSource: MatTableDataSource<Bet>;
   bets: Bet[] = [];
 
-  betEvent: any;
-  playEvent: any;
-
   constructor(
     private web3Service: Web3Service,
+    private contractService: ContractService,
     private accountService: AccountService,
     private statusService: StatusService,
     private changeDetectorRef: ChangeDetectorRef
@@ -49,29 +51,30 @@ export class BetHistoryComponent implements OnInit {
   ngOnInit(): void {
     console.log(this);
 
-    this.web3Service.artifactsToContract(roulette_artifacts)
-      .then((RouletteAbstraction) => {
-        this.Roulette = RouletteAbstraction;
-        return this.Roulette.deployed();
-      }).then((deployedRoulette) => {
-        this.deployedRoulette = deployedRoulette;
-        this.watchAccount();
-      }).catch((error) => {
-        console.log('Roulette artifacts could not be loaded or deployed Roulette contract could not be found.');
-        console.log(error);
-        this.statusService.showStatus('Error connecting with Roulette contract; see log.');
-      });
+    this.contractService.ready().then(() => {
+      return this.accountService.ready();
+    }).then(() => {
+      this.watchAccount();
+    }).catch((error) => {
+      console.log(error);
+      this.statusService.showStatus('Error connecting with smart contracts; see log.');
+    });
   }
 
   watchAccount() {
     this.accountService.accountObservable.subscribe((account) => {
-      this.betEvent = this.deployedRoulette.Bet({player: account}, {fromBlock: 0, toBlock: 'latest'});
-      this.betEvent.get(this.initialiseBets);
-      this.betEvent.watch(this.addBet);
+      const betEvent = this.contractService.newEvent('Roulette', 'Bet', {player: account});
+      const playEvent = this.contractService.newEvent('Roulette', 'Play', {player: account});
+      const payoutEvent = this.contractService.newEvent('Roulette', 'Payout', {player: account});
 
-      this.playEvent = this.deployedRoulette.Play({player: account}, {fromBlock: 0, toBlock: 'latest'});
-      this.playEvent.get(this.initialiseBets);
-      this.playEvent.watch(this.addBet);
+      betEvent.get(this.initialiseBets);
+      betEvent.watch(this.addBet);
+
+      playEvent.get(this.initialiseBets);
+      playEvent.watch(this.addBet);
+
+      payoutEvent.get(this.initialiseBets);
+      payoutEvent.watch(this.addBet);
     });
   }
 
@@ -82,7 +85,9 @@ export class BetHistoryComponent implements OnInit {
     }
 
     for (const bet of bets) {
-      this.addOrUpdate(new Bet(bet.args.qid, bet.blockNumber, bet.args.betSize, bet.args.betNumber, bet.args.winningNumber));
+      const betSize = bet.args.betSize == null ? null : this.web3Service.fromWei(bet.args.betSize, 'ether');
+      const payout = bet.args.payout == null ? null : this.web3Service.fromWei(bet.args.payout, 'ether');
+      this.addOrUpdate(new Bet(bet.args.qid, bet.blockNumber, betSize, bet.args.betNumber, bet.args.winningNumber, payout));
     }
   }
 
@@ -91,16 +96,33 @@ export class BetHistoryComponent implements OnInit {
       console.warn('There was an error fetching your bets.');
       return;
     }
-
-    this.addOrUpdate(new Bet(bet.args.qid, bet.blockNumber, bet.args.betSize, bet.args.betNumber, bet.args.winningNumber));
+    const betSize = bet.args.betSize == null ? null : this.web3Service.fromWei(bet.args.betSize, 'ether');
+    const payout = bet.args.payout == null ? null : this.web3Service.fromWei(bet.args.payout, 'ether');
+    this.addOrUpdate(new Bet(bet.args.qid, bet.blockNumber, betSize, bet.args.betNumber, bet.args.winningNumber, payout));
   }
 
   addOrUpdate(bet: Bet) {
-    const existingBetIndex = this.findBetIndexById(bet.id);
-    if (existingBetIndex > -1) {
-      if (bet.winningNumber != null) {
-        this.bets[existingBetIndex].winningNumber = bet.winningNumber;
-        console.log('Updated bet: ', this.bets[existingBetIndex]);
+    const index = this.findBetIndexById(bet.id);
+    if (index > -1) {
+      if (this.bets[index].blockNumber > bet.blockNumber) {
+        this.bets[index].blockNumber = bet.blockNumber;
+        console.log('Updated blockNumber for bet ', bet.id, ' to ', bet.blockNumber);
+      }
+      if (this.bets[index].betSize == null && bet.betSize != null) {
+        this.bets[index].betSize = bet.betSize;
+        console.log('Updated betSize for bet ', bet.id, ' to ', bet.betSize);
+      }
+      if (this.bets[index].betNumber == null && bet.betNumber != null) {
+        this.bets[index].betNumber = bet.betNumber;
+        console.log('Updated betNumber for bet ', bet.id, ' to ', bet.betNumber);
+      }
+      if (this.bets[index].winningNumber == null && bet.winningNumber != null) {
+        this.bets[index].winningNumber = bet.winningNumber;
+        console.log('Updated winningNumber for bet ', bet.id, ' to ', bet.winningNumber);
+      }
+      if (this.bets[index].payout == null && bet.payout != null) {
+        this.bets[index].payout = bet.payout;
+        console.log('Updated payout for bet ', bet.id, ' to ', bet.payout);
       }
     } else {
       this.bets.push(bet);
