@@ -18,6 +18,7 @@ export class RoscoinMarketComponent implements OnInit {
   deployedRoscoin: any;
 
   balance: number;
+  currentPrice: number;
 
   constructor(
     private web3Service: Web3Service,
@@ -35,6 +36,7 @@ export class RoscoinMarketComponent implements OnInit {
       }).then((deployedRoscoin) => {
         this.deployedRoscoin = deployedRoscoin;
         this.watchAccount();
+        this.refreshPrice();
       }).catch((error) => {
         console.log('Roscoin artifacts could not be loaded or deployed Roscoin contract could not be found.');
         console.log(error);
@@ -111,6 +113,19 @@ export class RoscoinMarketComponent implements OnInit {
     } catch (e) {
       console.log(e);
       this.statusService.showStatus('Error getting balance; see log.');
+    }
+  }
+
+  refreshPrice = async () => {
+    console.log('Refreshing price');
+    try {
+      const tokenPriceInWei: BigNumber = await this.deployedRoscoin.tokenPrice();
+      const tokenPrice = this.web3Service.fromWei(tokenPriceInWei, 'ether');
+      console.log('Found price: ' + tokenPrice);
+      this.currentPrice = tokenPrice;
+    } catch (e) {
+      console.log(e);
+      this.statusService.showStatus('Error getting token price; see log.');
     }
   }
 }
