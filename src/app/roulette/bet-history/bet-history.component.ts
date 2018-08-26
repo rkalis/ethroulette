@@ -33,6 +33,7 @@ export class BetHistoryComponent implements OnInit {
   deployedRoulette: any;
 
   betsDataSource: MatTableDataSource<Bet>;
+  currentBetsDataSource: MatTableDataSource<Bet>;
   bets: Bet[] = [];
 
   betEvent: any;
@@ -106,39 +107,19 @@ export class BetHistoryComponent implements OnInit {
       console.log('Added new bet: ', bet);
     }
     this.betsDataSource = new MatTableDataSource(this.bets);
+    this.currentBetsDataSource = new MatTableDataSource(this.currentBets());
     this.changeDetectorRef.detectChanges();
   }
 
-  findBetIndexById(id: string) {
+  findBetIndexById(id: string): number {
     return this.bets.findIndex((bet) => bet.id === id);
   }
 
-  setStatus(status) {
+  setStatus(status): void {
     this.matSnackBar.open(status, null, {duration: 3000});
   }
 
-  async bet(number: number, betSize: number) {
-    if (!this.deployedRoulette) {
-      this.setStatus('Roulette contract is not available');
-      return;
-    }
-
-    const betSizeInWei = this.web3Service.toWei(betSize, 'ether');
-    console.log('Betting ' + betSize + ' on number ' + number);
-
-    this.setStatus('Initiating transaction... (please wait)');
-
-    try {
-      const tx = await this.deployedRoulette.bet(number, {from: this.accountService.account, value: betSizeInWei});
-
-      if (!tx) {
-        this.setStatus('Transaction failed, bet has not been placed');
-      } else {
-        this.setStatus('Transaction complete, bet has been placed');
-      }
-    } catch (e) {
-      console.log(e);
-      this.setStatus('Error placing bet; see log.');
-    }
+  currentBets(): Bet[] {
+    return this.bets.filter(bet => bet.winningNumber == null);
   }
 }

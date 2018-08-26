@@ -1,4 +1,30 @@
 <mat-card>
+    <mat-card-header>Current Bets</mat-card-header>
+    <mat-card-content>
+      <mat-table [dataSource]="currentBetsDataSource">
+        <ng-container matColumnDef="betId">
+          <mat-header-cell *matHeaderCellDef> Id </mat-header-cell>
+          <mat-cell *matCellDef="let bet"> {{bet.id}} </mat-cell>
+        </ng-container>
+        <ng-container matColumnDef="blockNumber">
+            <mat-header-cell *matHeaderCellDef> Block Number </mat-header-cell>
+            <mat-cell *matCellDef="let bet"> {{bet.blockNumber}} </mat-cell>
+          </ng-container>
+        <ng-container matColumnDef="betSize">
+          <mat-header-cell *matHeaderCellDef> Bet Size </mat-header-cell>
+          <mat-cell *matCellDef="let bet"> {{bet.betSize}} </mat-cell>
+        </ng-container>
+        <ng-container matColumnDef="betNumber">
+          <mat-header-cell *matHeaderCellDef> Bet Number </mat-header-cell>
+          <mat-cell *matCellDef="let bet"> {{bet.betNumber}} </mat-cell>
+        </ng-container>
+        <mat-header-row *matHeaderRowDef="['betSize', 'blockNumber', 'betNumber']"></mat-header-row>
+        <mat-row *matRowDef="let row; columns: ['betSize', 'blockNumber', 'betNumber']"></mat-row>
+      </mat-table>
+    </mat-card-content>
+  </mat-card>
+
+<mat-card>
   <mat-card-header>Bet History</mat-card-header>
   <mat-card-content>
     <mat-table [dataSource]="betsDataSource">
