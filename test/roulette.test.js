@@ -37,7 +37,7 @@ contract('Roulette', (accounts) => {
       assert.equal(web3.eth.getBalance(roulette.address).toNumber(), originalBalance, "Balance should be unchanged");
     });
 
-    it("can not bet less than oraclize fee estimate", async () => {
+    it("can not bet less than oraclize fee", async () => {
       // given
       let betSize = 0;
       let betNumber = 0;
@@ -112,7 +112,19 @@ contract('Roulette', (accounts) => {
 
       assert.isBelow(web3.eth.getBalance(roulette.address).toNumber(), originalBalance + 2 * betSize, "Oraclize fee should be deducted from balance");
     });
-  })
+  });
+  describe("Pausing functionality", () => {
+    it("Can not play when paused", async () => {
+      // given
+      await roulette.pause({from: ownerAccount});
+      let betSize = (await roulette.maxBet()).toNumber()
+      let betNumber = 1;
+
+      // when, then
+      await assert.isRejected(roulette.bet(betNumber, {from: bettingAccount, value: betSize}));
+    });
+    // TODO: When pausing while bets are in progress, this blocks payout, and this can not be replayed
+  });
 });
 
 getFirstEvent = (_event) => {

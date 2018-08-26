@@ -8,7 +8,7 @@ import "openzeppelin-solidity/contracts/math/SafeMath.sol";
  * @title BackedToken
  * @author Rosco Kalis <roscokalis@gmail.com>
  */
-contract BackedToken {
+contract BackedToken is ERC20Basic {
     using SafeMath for uint256;
 
     BackingContract public backingContract;

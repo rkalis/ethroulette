@@ -22,11 +22,11 @@ contract RouletteForTesting is Roulette {
 
         uint256 betValue = msg.value - oraclizeFee;
 
-        emit Bet(msg.sender, betValue, number);
         bytes32 qid = oraclize_query("WolframAlpha", "random integer between 0 and 0");
 
         /* Store a player's info to retrieve it in the oraclize callback */
         players[qid] = PlayerInfo(msg.sender, betValue, number);
+        emit Bet(msg.sender, betValue, number, qid);
     }
 
     // /**

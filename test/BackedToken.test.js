@@ -133,11 +133,11 @@ contract('BackedToken', (accounts) => {
       });
     });
 
-    describe("Selling", () => {
+    describe("Transferring", () => {
       beforeEach(async () => {
         await backedToken.buy({from: buyerAccount, value: purchaseEthAmount});
       });
-      it("can be transfered with sufficient balance", async() => {
+      it("can be transferred with sufficient balance", async() => {
         // given
         let tokenPriceBeforeTransfer = (await backedToken.tokenPrice()).toNumber();
         let boughtTokenAmount = (await backedToken.balanceOf(buyerAccount)).toNumber();
@@ -157,7 +157,7 @@ contract('BackedToken', (accounts) => {
             return ev.from == buyerAccount && ev.to == receiverAccount && ev.value == transferTokenAmount;
         });
       });
-      it("can not be transfered without sufficient balance", async() => {
+      it("can not be transferred without sufficient balance", async() => {
         // given
         let boughtTokenAmount = (await backedToken.balanceOf(buyerAccount)).toNumber();
         let transferTokenAmount = boughtTokenAmount * 1.1;

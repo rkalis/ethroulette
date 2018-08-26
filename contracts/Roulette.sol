@@ -21,8 +21,8 @@ contract Roulette is usingOraclize, Pausable, BackingContract {
 
     mapping(bytes32=>PlayerInfo) players;
 
-    event Bet(address indexed player, uint256 betSize, uint8 betNumber);
-    event Play(address indexed player, uint256 betSize, uint8 betNumber, uint8 winningNumber);
+    event Bet(address indexed player, uint256 betSize, uint8 betNumber, bytes32 qid);
+    event Play(address indexed player, uint256 betSize, uint8 betNumber, uint8 winningNumber, bytes32 qid);
     event Payout(address indexed winner, uint256 payout);
 
     constructor(address roscoinAddress) BackingContract(roscoinAddress) public {
@@ -47,11 +47,11 @@ contract Roulette is usingOraclize, Pausable, BackingContract {
 
         uint256 betValue = msg.value - oraclizeFee;
 
-        emit Bet(msg.sender, betValue, number);
         bytes32 qid = oraclize_query("WolframAlpha", "random integer between 0 and 36");
 
         /* Store a player's info to retrieve it in the oraclize callback */
         players[qid] = PlayerInfo(msg.sender, betValue, number);
+        emit Bet(msg.sender, betValue, number, qid);
     }
 
     /**
@@ -68,7 +68,7 @@ contract Roulette is usingOraclize, Pausable, BackingContract {
         uint8 winningNumber = uint8(parseInt(result));
         PlayerInfo storage playerInfo = players[qid];
 
-        emit Play(playerInfo.player, playerInfo.betSize, playerInfo.betNumber, winningNumber);
+        emit Play(playerInfo.player, playerInfo.betSize, playerInfo.betNumber, winningNumber, qid);
         balanceForBacking = balanceForBacking.add(playerInfo.betSize);
 
         if (playerInfo.betNumber == winningNumber) {
@@ -110,10 +110,19 @@ contract Roulette is usingOraclize, Pausable, BackingContract {
 
     /**
      * @notice Returns an estimate of the oraclize fee.
-     * @return An estimate of the oraclize fee..
+     * @return An estimate of the oraclize fee.
      */
     function oraclizeFeeEstimate() public view returns (uint256) {
         return 0.004 ether;
+    }
+
+    /**
+     * @notice Returns whether bet with qid is currently active.
+     * @param qid The qid of the bet
+     * @return Whether the qid is currently playing.
+     */
+    function isCurrentlyPlaying(bytes32 qid) public view returns (bool) {
+        return players[qid].player != address(0);
     }
 
     // ///////////////////////
