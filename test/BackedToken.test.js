@@ -132,59 +132,8 @@ contract('BackedToken', (accounts) => {
                      "Backing contract balance should equal the purchase proceedings minus sale proceedings");
       });
     });
-
-    describe("Transferring", () => {
-      beforeEach(async () => {
-        await backedToken.buy({from: buyerAccount, value: purchaseEthAmount});
-      });
-      it("can be transferred with sufficient balance", async() => {
-        // given
-        let tokenPriceBeforeTransfer = (await backedToken.tokenPrice()).toNumber();
-        let boughtTokenAmount = (await backedToken.balanceOf(buyerAccount)).toNumber();
-        let transferTokenAmount = boughtTokenAmount / 2;
-
-        // when
-        let tx = await backedToken.transfer(receiverAccount, transferTokenAmount, {from: buyerAccount});
-
-        // then
-        let remainingTokenBalance = boughtTokenAmount - transferTokenAmount;
-        assert.equal((await backedToken.balanceOf(buyerAccount)).toNumber(), remainingTokenBalance, "Tokens should be sent");
-        assert.equal((await backedToken.balanceOf(receiverAccount)).toNumber(), remainingTokenBalance, "Tokens should be received");
-
-        assert.equal(tokenPriceBeforeTransfer, (await backedToken.tokenPrice()).toNumber(), "Token price should not change");
-
-        truffleAssert.eventEmitted(tx, 'Transfer', (ev) => {
-            return ev.from == buyerAccount && ev.to == receiverAccount && ev.value == transferTokenAmount;
-        });
-      });
-      it("can not be transferred without sufficient balance", async() => {
-        // given
-        let boughtTokenAmount = (await backedToken.balanceOf(buyerAccount)).toNumber();
-        let transferTokenAmount = boughtTokenAmount * 1.1;
-
-        // when, then
-        await assert.isRejected(backedToken.transfer(receiverAccount, transferTokenAmount, {from: buyerAccount}));
-      });
-    });
   });
 });
-
-
-
-getTransactionResultForEvent = (contract, eventLog) => {
-  return new Promise((resolve, reject) => {
-    let allEvents = contract.allEvents({fromBlock: eventLog.blockNumber, toBlock: eventLog.blockNumber});
-    allEvents.get((error, logs) => {
-      if (error !== null)
-      reject(error);
-      resolve({
-        tx: eventLog.transactionHash,
-        receipt: web3.eth.getTransactionReceipt(eventLog.transactionHash),
-        logs: logs.filter(log => log.transactionHash == eventLog.transactionHash)
-      });
-    })
-  })
-}
 
 getFirstEvent = (_event) => {
   return new Promise((resolve, reject) => {

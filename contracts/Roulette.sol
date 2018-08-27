@@ -2,8 +2,6 @@ pragma solidity ^0.4.24;
 
 import "./BackingContract.sol";
 import "oraclize-api/contracts/usingOraclize.sol";
-import "openzeppelin-solidity/contracts/token/ERC20/ERC20Basic.sol";
-import "openzeppelin-solidity/contracts/math/SafeMath.sol";
 import "openzeppelin-solidity/contracts/lifecycle/Pausable.sol";
 
 /**
@@ -11,8 +9,6 @@ import "openzeppelin-solidity/contracts/lifecycle/Pausable.sol";
  * @author Rosco Kalis <roscokalis@gmail.com>
  */
 contract Roulette is usingOraclize, Pausable, BackingContract {
-    using SafeMath for uint256;
-
     struct PlayerInfo {
         address player;
         uint256 betSize;
@@ -29,8 +25,6 @@ contract Roulette is usingOraclize, Pausable, BackingContract {
         // Set OAR for use with ethereum-bridge, remove for production
         OAR = OraclizeAddrResolverI(0x6f485C8BF6fc43eA212E93BBF8ce046C7f1cb475);
     }
-
-    // Betting functions
 
     /**
      * @notice Bets an amount of eth on a specific number.
@@ -87,7 +81,7 @@ contract Roulette is usingOraclize, Pausable, BackingContract {
      * @param qid The game for which the payout is made
      * @param amount The amount to be paid out to the bet winner.
      */
-    function payout(address winner, bytes32 qid, uint256 amount) internal whenNotPaused {
+    function payout(address winner, bytes32 qid, uint256 amount) internal {
         require(amount > 0, "Payout amount should be more than 0");
         require(amount <= address(this).balance, "Payout amount should not be more than contract balance");
 
@@ -96,35 +90,20 @@ contract Roulette is usingOraclize, Pausable, BackingContract {
         emit Payout(winner, qid, amount);
     }
 
-    // ///////////////////////
-
-    // Utility functions
-
     /**
      * @notice Returns the maximum bet (0.5% of balance) for this contract.
      * @dev Based on empirical statistics (see docs/max_bet_size.md).
      * @return The maximum bet.
      */
     function maxBet() public view returns (uint256) {
-        return address(this).balance.div(200) + oraclizeFeeEstimate();
+        return balanceForBacking.div(200) + oraclizeFeeEstimate();
     }
 
     /**
      * @notice Returns an estimate of the oraclize fee.
      * @return An estimate of the oraclize fee.
      */
-    function oraclizeFeeEstimate() public view returns (uint256) {
+    function oraclizeFeeEstimate() public pure returns (uint256) {
         return 0.004 ether;
     }
-
-    /**
-     * @notice Returns whether bet with qid is currently active.
-     * @param qid The qid of the bet
-     * @return Whether the qid is currently playing.
-     */
-    function isCurrentlyPlaying(bytes32 qid) public view returns (bool) {
-        return players[qid].player != address(0);
-    }
-
-    // ///////////////////////
 }

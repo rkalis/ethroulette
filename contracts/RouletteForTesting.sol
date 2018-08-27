@@ -5,9 +5,10 @@ import "./Roulette.sol";
 /**
  * @title RouletteForTesting
  * @author Rosco Kalis <roscokalis@gmail.com>
+ * @dev This contract extends the Roulette contract, but with deterministic win conditions,
+ * to test the betting functionality.
  */
 contract RouletteForTesting is Roulette {
-
     constructor(address roscoinAddress) Roulette(roscoinAddress) public {}
 
     /**
@@ -28,17 +29,4 @@ contract RouletteForTesting is Roulette {
         players[qid] = PlayerInfo(msg.sender, betValue, number);
         emit Bet(msg.sender, qid, betValue, number);
     }
-
-    // /**
-    //  * @notice Overrides the existing payout function so it is public and can be tested.
-    //  * @param winner The account of the bet winner.
-    //  * @param amount The amount to be paid out to the bet winner.
-    //  */
-    // function payout(address winner, uint256 amount) public {
-    //     require(amount > 0, "Payout amount should be more than 0");
-    //     require(amount <= address(this).balance, "Payout amount should not be more than contract balance");
-
-    //     winner.transfer(amount);
-    //     emit Payout(winner, amount);
-    // }
 }

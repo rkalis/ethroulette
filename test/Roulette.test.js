@@ -123,7 +123,6 @@ contract('Roulette', (accounts) => {
       // when, then
       await assert.isRejected(roulette.bet(betNumber, {from: bettingAccount, value: betSize}));
     });
-    // TODO: When pausing while bets are in progress, this blocks payout, and this can not be replayed
   });
 });
 

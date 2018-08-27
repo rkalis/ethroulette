@@ -1,25 +1,17 @@
 pragma solidity ^0.4.24;
 
 import "./BackingContract.sol";
-import "openzeppelin-solidity/contracts/token/ERC20/ERC20Basic.sol";
-import "openzeppelin-solidity/contracts/math/SafeMath.sol";
+import "openzeppelin-solidity/contracts/token/ERC20/StandardToken.sol";
 
 /**
  * @title BackedToken
  * @author Rosco Kalis <roscokalis@gmail.com>
  */
-contract BackedToken is ERC20Basic {
-    using SafeMath for uint256;
-
+contract BackedToken is StandardToken {
     BackingContract public backingContract;
-
-    uint256 internal internalTotalSupply;
-
-    mapping(address=>uint256) balances;
 
     event Buy(address indexed buyer, uint256 ethAmount, uint256 tokenPrice, uint256 tokenAmount);
     event Sell(address indexed seller, uint256 ethAmount, uint256 tokenPrice, uint256 tokenAmount);
-    event Transfer(address indexed from, address indexed to, uint256 value);
 
     modifier onlyWhenBacked() {
         require(address(backingContract) != address(0), "Can only be executed with a backing contract");
@@ -59,40 +51,6 @@ contract BackedToken is ERC20Basic {
     }
 
     /**
-     * @notice Returns the current total token supply.
-     * @return The total token supply.
-     */
-    function totalSupply() public view onlyWhenBacked returns (uint256) {
-        return internalTotalSupply;
-    }
-
-    /**
-     * @notice Retrieves the token balance of an account.
-     * @param who Account whose balance should be retrieved.
-     * @return The account's token balance.
-     */
-    function balanceOf(address who) public view onlyWhenBacked returns (uint256) {
-        return balances[who];
-    }
-
-    /**
-     * @notice Transfers tokens from the account of the caller to a different account.
-     * @dev Emits Transfer event.
-     * @param to Recipient of the tokens.
-     * @param value Amount of tokens to be transferred.
-     * @return True.
-     */
-    function transfer(address to, uint256 value) public onlyWhenBacked returns (bool) {
-        require(value <= balances[msg.sender], "Transfer amount can not be more than balance");
-        require(to != address(0), "Can not transfer tokens to address(0)");
-
-        balances[msg.sender] = balances[msg.sender].sub(value);
-        balances[to] = balances[to].add(value);
-        emit Transfer(msg.sender, to, value);
-        return true;
-    }
-
-    /**
      * @notice Buys an amount of tokens
      * @dev Uses the conversion functions.
      * @dev Emits Buy event.
@@ -103,7 +61,7 @@ contract BackedToken is ERC20Basic {
         uint256 tokenAmount = convertEthToToken(msg.value);
         uint256 currentTokenPrice = tokenPrice();
         balances[msg.sender] = balances[msg.sender].add(tokenAmount);
-        internalTotalSupply = internalTotalSupply.add(tokenAmount);
+        totalSupply_ = totalSupply_.add(tokenAmount);
 
         backingContract.deposit.value(msg.value)();
 
@@ -122,7 +80,7 @@ contract BackedToken is ERC20Basic {
         uint256 ethAmount = convertTokenToEth(tokenAmount);
         uint256 currentTokenPrice = tokenPrice();
         balances[msg.sender] = balances[msg.sender].sub(tokenAmount);
-        internalTotalSupply = internalTotalSupply.sub(tokenAmount);
+        totalSupply_ = totalSupply_.sub(tokenAmount);
 
         backingContract.withdraw(ethAmount);
         msg.sender.transfer(ethAmount);
