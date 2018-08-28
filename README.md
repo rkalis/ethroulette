@@ -23,10 +23,10 @@ Because the token's price is derived from the balance of the Roulette contract, 
 
 ## Local Installation
 ### Prerequisites
-We need truffle to compile, migrate and test the smart contracts. We need Ganache to run a local development blockchain instance. We need ethereum-bridge to simulate Oraclize functionality within the local Ganache instance. Finally, we need the Angular CLI to run the frontend.
+We need truffle to compile, migrate and test the smart contracts. We need Ganache to run a local development blockchain instance. We need ethereum-bridge to simulate Oraclize functionality within the local Ganache instance. Finally, we need the Angular CLI to run the frontend. We assume that things like git, npm, etc. are already installed as well.
 ```bash
-sudo apt-get install build-essential -y
-npm install -g ethereum-bridge truffle ganache-cli @angular/cli
+sudo apt install build-essential -y
+(sudo) npm install -g ethereum-bridge truffle ganache-cli @angular/cli
 ```
 
 MetaMask also needs to be installed to interact with the application inside a browser.
@@ -116,7 +116,7 @@ Once the result of a bet has been returned, the bet is removed from the current 
 
 ![Roulette history](/docs/img/roulette-history.png)
 
-If the bet number matches the winning number, the winnings will be paid out to the winner, and a payout amount will also be added to the entry in the bet histor.
+If the bet number matches the winning number, the winnings will be paid out to the winner, and a payout amount will also be added to the entry in the bet history.
 
 ![Winning](/docs/img/winning.png)
 
