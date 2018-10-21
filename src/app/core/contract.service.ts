@@ -19,37 +19,25 @@ export class ContractService {
     }
   };
 
-  private _ready: Promise<any>;
+  private _ready: Promise<void>;
 
   constructor(
     private web3Service: Web3Service
   ) {
     console.log(this);
 
-    this._ready = web3Service.ready().then(() => {
-      return Promise.all([
-        new Promise((resolve, reject) => {
-          this.web3Service.artifactsToContract(roscoin_artifacts)
-          .then((RoscoinAbstraction) => {
-            this.contracts.Roscoin.artifacts = RoscoinAbstraction;
-            return this.contracts.Roscoin.artifacts.deployed();
-          }).then((deployedRoscoin) => {
-            this.contracts.Roscoin.deployed = deployedRoscoin;
-            return resolve();
-          }).catch((error) => reject(error));
-        }),
-        new Promise((resolve, reject) => {
-          this.web3Service.artifactsToContract(roulette_artifacts)
-          .then((RouletteAbstraction) => {
-            this.contracts.Roulette.artifacts = RouletteAbstraction;
-            return this.contracts.Roulette.artifacts.deployed();
-          }).then((deployedRoulette) => {
-            this.contracts.Roulette.deployed = deployedRoulette;
-            return resolve();
-          }).catch((error) => reject(error));
-        })
-      ]);
-    });
+    this._ready = (async () => {
+      await web3Service.ready();
+      const deployingRoscoin = this.storeDeployedContract('Roscoin', roscoin_artifacts);
+      const deployingRoulette = this.storeDeployedContract('Roulette', roulette_artifacts);
+      await deployingRoscoin;
+      await deployingRoulette;
+    })();
+  }
+
+  private async storeDeployedContract(name: string, artifacts: any) {
+    this.contracts[name].artifacts = await this.web3Service.artifactsToContract(artifacts);
+    this.contracts[name].deployed = await this.contracts[name].artifacts.deployed();
   }
 
   ready(): Promise<any> {
@@ -61,7 +49,6 @@ export class ContractService {
   }
 
   newEvent(contract: string, event: string, filter: object = {}) {
-    const newEvent = this.contracts[contract].deployed[event](filter, {fromBlock: 0, toBlock: 'latest'});
-    return newEvent;
+    return this.contracts[contract].deployed[event](filter, {fromBlock: 0, toBlock: 'latest'});
   }
 }

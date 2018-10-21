@@ -11,14 +11,14 @@ export class AccountService {
 
   private _ready: Promise<any>;
 
-  constructor(private web3Service: Web3Service) {
+  constructor(
+    private web3Service: Web3Service
+  ) {
     console.log(this);
-    this._ready = new Promise((resolve, reject) => {
-      web3Service.ready().then(() => {
-    this.watchAccount();
-        return resolve();
-      }).catch((error) => reject(error));
-    });
+    this._ready = (async () => {
+      await web3Service.ready();
+      this.watchAccount();
+    })();
   }
 
   ready(): Promise<any> {

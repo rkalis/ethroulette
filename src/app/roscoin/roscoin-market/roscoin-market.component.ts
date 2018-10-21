@@ -25,16 +25,19 @@ export class RoscoinMarketComponent implements OnInit {
 
   ngOnInit(): void {
     console.log(this);
+    this.init();
+  }
 
-    this.contractService.ready().then(() => {
-      return this.accountService.ready();
-    }).then(() => {
+  private async init() {
+    try {
+      await this.contractService.ready();
+      await this.accountService.ready();
       this.watchAccount();
       this.refreshPrice();
-    }).catch((error) => {
+    } catch (error) {
       console.log(error);
       this.statusService.showStatus('Error connecting with smart contracts; see log.');
-    });
+    }
   }
 
   watchAccount() {

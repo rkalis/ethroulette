@@ -1,6 +1,6 @@
 import { Injectable } from '@angular/core';
 import * as contract from 'truffle-contract';
-import { Subject, BehaviorSubject } from 'rxjs/Rx';
+import { Subject } from 'rxjs/Rx';
 import { BigNumber } from 'bignumber.js';
 
 declare let require: any;
@@ -18,8 +18,8 @@ export class Web3Service {
   constructor() {
     console.log(this);
     this._ready = new Promise((resolve, reject) => {
-    window.addEventListener('load', (event) => {
-      this.bootstrapWeb3();
+      window.addEventListener('load', (event) => {
+        this.bootstrapWeb3();
         return resolve();
       });
     });

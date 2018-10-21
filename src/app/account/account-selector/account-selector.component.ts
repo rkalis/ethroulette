@@ -7,7 +7,9 @@ import { AccountService } from '../../core/account.service';
   styleUrls: ['./account-selector.component.css']
 })
 export class AccountSelectorComponent {
-  constructor(public accountService: AccountService) {
+  constructor(
+    public accountService: AccountService
+  ) {
     console.log(this);
   }
 }

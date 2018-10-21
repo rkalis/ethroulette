@@ -20,14 +20,17 @@ export class RoulettePlayerComponent implements OnInit {
 
   ngOnInit(): void {
     console.log(this);
+    this.init();
+  }
 
-    this.contractService.ready().then(() => {
-      return this.accountService.ready();
-    }).then(() => {
-    }).catch((error) => {
+  private async init() {
+    try {
+      await this.contractService.ready();
+      await this.accountService.ready();
+    } catch (error) {
       console.log(error);
       this.statusService.showStatus('Error connecting with smart contracts; see log.');
-    });
+    }
   }
 
   async bet(number: number, betSize: number) {
