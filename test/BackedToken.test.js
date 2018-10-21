@@ -46,7 +46,6 @@ contract('BackedToken', (accounts) => {
 
   describe("Token functionality", () => {
     const buyerAccount = accounts[1];
-    const receiverAccount = accounts[2];
     const purchaseEthAmount = 1e18;
 
     beforeEach(async () => {
@@ -69,8 +68,8 @@ contract('BackedToken', (accounts) => {
         assert.equal((await backedToken.tokenPrice()).toNumber(), tokenPriceBeforePurchase, "Token price should not change");
 
         truffleAssert.eventEmitted(tx, 'Buy', (ev) => {
-            return ev.buyer == buyerAccount && ev.ethAmount == purchaseEthAmount &&
-                   ev.tokenPrice == tokenPriceBeforePurchase && ev.tokenAmount == expectedTokenBalance;
+          return ev.buyer == buyerAccount && ev.ethAmount == purchaseEthAmount &&
+                  ev.tokenPrice == tokenPriceBeforePurchase && ev.tokenAmount == expectedTokenBalance;
         });
       });
       it("purchase proceedings are sent to the backing contract", async() => {
@@ -104,8 +103,26 @@ contract('BackedToken', (accounts) => {
         assert.equal(tokenPriceBeforeSale, (await backedToken.tokenPrice()).toNumber(), "Token price should not change");
 
         truffleAssert.eventEmitted(tx, 'Sell', (ev) => {
-            return ev.seller == buyerAccount && ev.ethAmount == saleEthAmount &&
-                   ev.tokenPrice == tokenPriceBeforeSale && ev.tokenAmount == saleTokenAmount;
+          return ev.seller == buyerAccount && ev.ethAmount == saleEthAmount &&
+                  ev.tokenPrice == tokenPriceBeforeSale && ev.tokenAmount == saleTokenAmount;
+        });
+      });
+      it("full balance can be sold", async() => {
+        // given
+        let tokenPriceBeforeSale = (await backedToken.tokenPrice()).toNumber();
+        let fullBalance = (await backedToken.balanceOf(buyerAccount)).toNumber();
+        let remainingBalance = 0;
+
+        // when
+        let tx = await backedToken.sell(fullBalance, {from: buyerAccount});
+
+        // then
+        assert.equal((await backedToken.balanceOf(buyerAccount)).toNumber(), remainingBalance, "Token balance should be zero");
+
+        assert.equal(tokenPriceBeforeSale, (await backedToken.tokenPrice()).toNumber(), "Token price should not change");
+
+        truffleAssert.eventEmitted(tx, 'Sell', (ev) => {
+          return ev.seller == buyerAccount && ev.tokenAmount == fullBalance;
         });
       });
       it("can not be sold without sufficient balance", async() => {
