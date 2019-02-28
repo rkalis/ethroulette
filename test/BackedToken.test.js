@@ -1,11 +1,12 @@
 const BackedToken = artifacts.require('BackedToken');
 const BackingContract = artifacts.require('BackingContract');
 const truffleAssert = require('truffle-assertions');
-const chai = require("chai");
-const chaiAsPromised = require("chai-as-promised");
+const { assert } = require("chai");
+const BN = require('bn.js')
 
-chai.use(chaiAsPromised);
-const assert = chai.assert;
+BN.ONE_ETH = new BN(10).pow(new BN(18));
+BN.ZERO = new BN(0);
+BN.ONE = new BN(1);
 
 contract('BackedToken', (accounts) => {
   let backedToken;
@@ -31,7 +32,7 @@ contract('BackedToken', (accounts) => {
       backedToken = await BackedToken.new({from: ownerAccount});
 
       // when, then
-      await assert.isRejected(backedToken.back({from: ownerAccount}));
+      await truffleAssert.fails(backedToken.back({from: ownerAccount}));
     });
 
     it("can only be backed once", async() => {
@@ -40,13 +41,13 @@ contract('BackedToken', (accounts) => {
       backingContract = await BackingContract.new(backedToken.address, {from: ownerAccount});
 
       // when, then
-      await assert.isRejected(BackingContract.new(backedToken.address, {from: ownerAccount}));
+      await truffleAssert.reverts(BackingContract.new(backedToken.address, {from: ownerAccount}));
     });
   });
 
   describe("Token functionality", () => {
     const buyerAccount = accounts[1];
-    const purchaseEthAmount = 1e18;
+    const purchaseEthAmount = BN.ONE_ETH;
 
     beforeEach(async () => {
       backedToken = await BackedToken.new({from: ownerAccount});
@@ -56,28 +57,35 @@ contract('BackedToken', (accounts) => {
     describe("Buying", () => {
       it("can be bought", async() => {
         // given
-        let tokenPriceBeforePurchase = (await backedToken.tokenPrice()).toNumber();
+        let tokenPriceBeforePurchase = await backedToken.tokenPrice();
 
         // when
         let tx = await backedToken.buy({from: buyerAccount, value: purchaseEthAmount});
 
         // then
-        let expectedTokenBalance = purchaseEthAmount / tokenPriceBeforePurchase * 1e18;
-        assert.equal((await backedToken.balanceOf(buyerAccount)).toNumber(), expectedTokenBalance, "Token balance should match");
+        let expectedTokenBalance = purchaseEthAmount.mul(BN.ONE_ETH).div(tokenPriceBeforePurchase);
+        let actualTokenBalance = await backedToken.balanceOf(buyerAccount);
+        let tokenPrice = await backedToken.tokenPrice();
 
-        assert.equal((await backedToken.tokenPrice()).toNumber(), tokenPriceBeforePurchase, "Token price should not change");
+        assert.equal(actualTokenBalance.toString(), expectedTokenBalance.toString(), "Token balance should match");
+        assert.equal(tokenPrice.toString(), tokenPriceBeforePurchase.toString(), "Token price should not change");
 
         truffleAssert.eventEmitted(tx, 'Buy', (ev) => {
-          return ev.buyer == buyerAccount && ev.ethAmount == purchaseEthAmount &&
-                  ev.tokenPrice == tokenPriceBeforePurchase && ev.tokenAmount == expectedTokenBalance;
+          return ev.buyer == buyerAccount && ev.ethAmount.eq(purchaseEthAmount) &&
+                 ev.tokenPrice.eq(tokenPriceBeforePurchase) && ev.tokenAmount.eq(expectedTokenBalance);
         });
       });
+
       it("purchase proceedings are sent to the backing contract", async() => {
         // when
         await backedToken.buy({from: buyerAccount, value: purchaseEthAmount});
 
         // then
-        assert.equal(web3.eth.getBalance(backingContract.address).toNumber(), purchaseEthAmount, "Backing contract balance should equal purchase eth amount");
+        let contractBalance = new BN(await web3.eth.getBalance(backingContract.address));
+        assert.equal(
+          contractBalance.toString(), purchaseEthAmount.toString(),
+          "Backing contract balance should equal purchase eth amount"
+        );
       });
     });
 
@@ -88,77 +96,79 @@ contract('BackedToken', (accounts) => {
 
       it("can be sold with sufficient balance", async() => {
         // given
-        let tokenPriceBeforeSale = (await backedToken.tokenPrice()).toNumber();
-        let saleEthAmount = purchaseEthAmount / 2;
-        let saleTokenAmount = saleEthAmount / tokenPriceBeforeSale * 1e18;
-        let remainingBalance = purchaseEthAmount - saleEthAmount;
+        let tokenPriceBeforeSale = await backedToken.tokenPrice();
+        let saleEthAmount = purchaseEthAmount.divn(2);
+        let saleTokenAmount = saleEthAmount.mul(BN.ONE_ETH).div(tokenPriceBeforeSale);
+        let remainingBalance = purchaseEthAmount.sub(saleEthAmount);
 
         // when
         let tx = await backedToken.sell(saleTokenAmount, {from: buyerAccount});
 
         // then
-        let expectedTokenBalance = remainingBalance / tokenPriceBeforeSale * 1e18;
-        assert.equal((await backedToken.balanceOf(buyerAccount)).toNumber(), expectedTokenBalance, "Token balance should match");
+        let expectedTokenBalance = remainingBalance.mul(BN.ONE_ETH).div(tokenPriceBeforeSale);
+        let actualTokenBalance = await backedToken.balanceOf(buyerAccount);
+        let tokenPrice = await backedToken.tokenPrice();
 
-        assert.equal(tokenPriceBeforeSale, (await backedToken.tokenPrice()).toNumber(), "Token price should not change");
+        assert.equal(actualTokenBalance.toString(), expectedTokenBalance.toString(), "Token balance should match");
+        assert.equal(tokenPrice.toString(), tokenPriceBeforeSale.toString(), "Token price should not change");
 
         truffleAssert.eventEmitted(tx, 'Sell', (ev) => {
-          return ev.seller == buyerAccount && ev.ethAmount == saleEthAmount &&
-                  ev.tokenPrice == tokenPriceBeforeSale && ev.tokenAmount == saleTokenAmount;
+          return ev.seller == buyerAccount && ev.ethAmount.eq(saleEthAmount) &&
+                 ev.tokenPrice.eq(tokenPriceBeforeSale) && ev.tokenAmount.eq(saleTokenAmount);
         });
       });
+
       it("full balance can be sold", async() => {
         // given
-        let tokenPriceBeforeSale = (await backedToken.tokenPrice()).toNumber();
-        let fullBalance = (await backedToken.balanceOf(buyerAccount)).toNumber();
-        let remainingBalance = 0;
+        let tokenPriceBeforeSale = await backedToken.tokenPrice();
+        let fullBalance = await backedToken.balanceOf(buyerAccount);
+        let remainingBalance = BN.ZERO;
 
         // when
         let tx = await backedToken.sell(fullBalance, {from: buyerAccount});
 
         // then
-        assert.equal((await backedToken.balanceOf(buyerAccount)).toNumber(), remainingBalance, "Token balance should be zero");
+        let expectedTokenBalance = remainingBalance;
+        let actualTokenBalance = await backedToken.balanceOf(buyerAccount);
+        let tokenPrice = await backedToken.tokenPrice();
 
-        assert.equal(tokenPriceBeforeSale, (await backedToken.tokenPrice()).toNumber(), "Token price should not change");
+        assert.equal(actualTokenBalance.toString(), expectedTokenBalance.toString(), "Token balance should be zero");
+        assert.equal(tokenPrice.toString(), tokenPriceBeforeSale.toString(), "Token price should not change");
 
         truffleAssert.eventEmitted(tx, 'Sell', (ev) => {
-          return ev.seller == buyerAccount && ev.tokenAmount == fullBalance;
+          return ev.seller == buyerAccount && ev.tokenAmount.eq(fullBalance);
         });
       });
+
       it("can not be sold without sufficient balance", async() => {
         // given
-        let tokenPriceBeforeSale = (await backedToken.tokenPrice()).toNumber();
-        let saleEthAmount = purchaseEthAmount * 1.1;
-        let saleTokenAmount = saleEthAmount / tokenPriceBeforeSale * 1e18;
+        let tokenPriceBeforeSale = await backedToken.tokenPrice();
+        let saleEthAmount = purchaseEthAmount.muln(11).divn(10);
+        let saleTokenAmount = saleEthAmount.mul(BN.ONE_ETH).div(tokenPriceBeforeSale);
 
         // when, then
-        await assert.isRejected(backedToken.sell(saleTokenAmount, {from: buyerAccount}));
+        await truffleAssert.reverts(backedToken.sell(saleTokenAmount, {from: buyerAccount}));
       });
+
       it("sale proceedings are removed from backing contract", async() => {
         // given
-        let tokenPriceBeforeSale = (await backedToken.tokenPrice()).toNumber();
-        let saleEthAmount = purchaseEthAmount / 2;
-        let saleTokenAmount = saleEthAmount / tokenPriceBeforeSale * 1e18;
-        let remainingBalance = purchaseEthAmount - saleEthAmount;
+        let tokenPriceBeforeSale = await backedToken.tokenPrice();
+        let saleEthAmount = purchaseEthAmount.divn(2);
+        let saleTokenAmount = saleEthAmount.mul(BN.ONE_ETH).div(tokenPriceBeforeSale);
+        let remainingBalance = purchaseEthAmount.sub(saleEthAmount);
 
         // when
         await backedToken.sell(saleTokenAmount, {from: buyerAccount});
 
         // then
-        assert.equal(web3.eth.getBalance(backingContract.address).toNumber(), remainingBalance,
-                     "Backing contract balance should equal the purchase proceedings minus sale proceedings");
+        let expectedBalance = remainingBalance;
+        let actualBalance = new BN(await web3.eth.getBalance(backingContract.address));
+
+        assert.equal(
+          actualBalance.toString(), expectedBalance.toString(),
+          "Backing contract balance should equal the purchase proceedings minus sale proceedings"
+        );
       });
     });
   });
 });
-
-getFirstEvent = (_event) => {
-  return new Promise((resolve, reject) => {
-    _event.watch((error, log) => {
-      _event.stopWatching();
-      if (error !== null)
-      reject(error);
-      resolve(log);
-    });
-  });
-}

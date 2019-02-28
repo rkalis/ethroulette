@@ -1,10 +1,11 @@
 const BackedToken = artifacts.require('BackedToken');
 const BackingContract = artifacts.require('BackingContract');
-const chai = require("chai");
-const chaiAsPromised = require("chai-as-promised");
+const truffleAssert = require('truffle-assertions');
+const BN = require('bn.js');
 
-chai.use(chaiAsPromised);
-const assert = chai.assert;
+BN.ONE_ETH = new BN(10).pow(new BN(18));
+BN.ZERO = new BN(0);
+BN.ONE = new BN(1);
 
 // Most of the BackingContract <-> BackedToken functionality is tested in BackedToken.test.js
 contract('BackingContract', (accounts) => {
@@ -21,6 +22,6 @@ contract('BackingContract', (accounts) => {
 
   it("can not be withdrawn from by regular account", async() => {
     // when, then
-    await assert.isRejected(backingContract.withdraw(1e18, {from: ownerAccount}));
+    await truffleAssert.fails(backingContract.withdraw(BN.ONE_ETH, {from: ownerAccount}));
   });
 });

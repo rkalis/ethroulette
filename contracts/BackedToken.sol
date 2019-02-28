@@ -1,13 +1,13 @@
-pragma solidity ^0.4.24;
+pragma solidity ^0.5.0;
 
 import "./BackingContract.sol";
-import "openzeppelin-solidity/contracts/token/ERC20/StandardToken.sol";
+import "openzeppelin-solidity/contracts/token/ERC20/ERC20.sol";
 
 /**
  * @title BackedToken
  * @author Rosco Kalis <roscokalis@gmail.com>
  */
-contract BackedToken is StandardToken {
+contract BackedToken is ERC20 {
     BackingContract public backingContract;
 
     event Buy(address indexed buyer, uint256 ethAmount, uint256 tokenPrice, uint256 tokenAmount);
@@ -31,7 +31,7 @@ contract BackedToken is StandardToken {
     /**
      * @dev Fallback payable function forwarding funds to the backing contract.
      */
-    function() public payable onlyWhenBacked {
+    function() external payable onlyWhenBacked {
         backingContract.deposit.value(msg.value)();
     }
 
@@ -46,7 +46,7 @@ contract BackedToken is StandardToken {
      * @param backingContractAddress The address of a BackingContract that will back this token.
      * @return The total token supply.
      */
-    function back(address backingContractAddress) external onlyWhenNotBacked {
+    function back(address payable backingContractAddress) external onlyWhenNotBacked {
         backingContract = BackingContract(backingContractAddress);
     }
 
@@ -60,8 +60,7 @@ contract BackedToken is StandardToken {
 
         uint256 tokenAmount = convertEthToToken(msg.value);
         uint256 currentTokenPrice = tokenPrice();
-        balances[msg.sender] = balances[msg.sender].add(tokenAmount);
-        totalSupply_ = totalSupply_.add(tokenAmount);
+        _mint(msg.sender, tokenAmount);
 
         backingContract.deposit.value(msg.value)();
 
@@ -75,12 +74,11 @@ contract BackedToken is StandardToken {
      * @param tokenAmount The amount of tokens to sell.
      */
     function sell(uint256 tokenAmount) external onlyWhenBacked {
-        require(tokenAmount <= balances[msg.sender], "Can not divest more than investment");
+        require(tokenAmount <= balanceOf(msg.sender), "Can not divest more than investment");
 
         uint256 ethAmount = convertTokenToEth(tokenAmount);
         uint256 currentTokenPrice = tokenPrice();
-        balances[msg.sender] = balances[msg.sender].sub(tokenAmount);
-        totalSupply_ = totalSupply_.sub(tokenAmount);
+        _burn(msg.sender, tokenAmount);
 
         backingContract.withdraw(ethAmount);
         msg.sender.transfer(ethAmount);

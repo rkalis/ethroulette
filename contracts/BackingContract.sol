@@ -1,4 +1,4 @@
-pragma solidity ^0.4.24;
+pragma solidity ^0.5.0;
 
 import "./BackedToken.sol";
 import "openzeppelin-solidity/contracts/math/SafeMath.sol";
@@ -21,7 +21,7 @@ contract BackingContract {
     /**
      * @dev Fallback payable function, adding the new funds to balanceForBacking.
      */
-    function() public payable {
+    function() external payable {
         balanceForBacking = balanceForBacking.add(msg.value);
     }
 
@@ -29,9 +29,9 @@ contract BackingContract {
      * @notice Sets the backed token and backs it.
      * @param backedTokenAddress The address of the deployed backed token.
      */
-    constructor(address backedTokenAddress) public {
+    constructor(address payable backedTokenAddress) public {
         backedToken = BackedToken(backedTokenAddress);
-        backedToken.back(this);
+        backedToken.back(address(this));
     }
 
     /**

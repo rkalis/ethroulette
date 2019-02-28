@@ -1,12 +1,13 @@
 const Roulette = artifacts.require('RouletteForTesting');
 const Roscoin = artifacts.require('Roscoin');
-const BigNumber = require('bignumber.js').BigNumber;
+const BN = require('bn.js');
 const truffleAssert = require('truffle-assertions');
-const chai = require("chai");
-const chaiAsPromised = require("chai-as-promised");
+const { assert } = require('chai');
+const { getFirstEvent } = require('./util');
 
-chai.use(chaiAsPromised);
-const assert = chai.assert;
+BN.ONE_ETH = new BN(10).pow(new BN(18));
+BN.ZERO = new BN(0);
+BN.ONE = new BN(1);
 
 contract('Roulette', (accounts) => {
   let roulette;
@@ -14,7 +15,7 @@ contract('Roulette', (accounts) => {
 
   const ownerAccount = accounts[0];
   const bettingAccount = accounts[1];
-  const originalBalance = 1e18;
+  const originalBalance = BN.ONE_ETH;
 
   beforeEach(async () => {
     roscoin = await Roscoin.new({from: ownerAccount});
@@ -29,33 +30,32 @@ contract('Roulette', (accounts) => {
   describe("Betting functionality", () => {
     it("can not bet more than max bet", async () => {
       // given
-      let betSize = (await roulette.maxBet()).toNumber() * 1.1;
-      let betNumber = 0;
+      let betSize = (await roulette.maxBet()).muln(11).divn(10);
+      let betNumber = BN.ZERO;
 
       // when, then
-      await assert.isRejected(roulette.bet(betNumber, {from: bettingAccount, value: betSize}));
-      assert.equal(web3.eth.getBalance(roulette.address).toNumber(), originalBalance, "Balance should be unchanged");
+      await truffleAssert.reverts(roulette.bet(betNumber, {from: bettingAccount, value: betSize}));
     });
 
     it("can not bet less than oraclize fee", async () => {
       // given
-      let betSize = 0;
-      let betNumber = 0;
+      let betSize = BN.ZERO;
+      let betNumber = BN.ZERO;
 
       // when, then
-      await assert.isRejected(roulette.bet(betNumber, {from: bettingAccount, value: betSize}));
-      assert.equal(web3.eth.getBalance(roulette.address).toNumber(), originalBalance, "Balance should be unchanged");
+      await truffleAssert.reverts(roulette.bet(betNumber, {from: bettingAccount, value: betSize}));
     });
   });
 
   describe("Playing functionality", () => {
     it("wins when bet on the right number", async () => {
       // given
-      let betSize = (await roulette.maxBet()).toNumber()
-      let betNumber = 0;
+      let betSize = await roulette.maxBet();
+      let betNumber = BN.ZERO;
 
       // when
-      await roulette.bet(betNumber, {from: bettingAccount, value: betSize});
+      roulette.bet(betNumber, {from: bettingAccount, value: betSize});
+
       let playEvent = await getFirstEvent(roulette.Play({fromBlock: 'latest'}));
       let callbackTx = await truffleAssert.createTransactionResult(roulette, playEvent.transactionHash);
 
@@ -64,19 +64,22 @@ contract('Roulette', (accounts) => {
         return ev.player === bettingAccount && ev.betNumber.eq(ev.winningNumber);
       });
       truffleAssert.eventEmitted(callbackTx, 'Payout', (ev) => {
-        return ev.winner === bettingAccount && ev.payout.eq((BigNumber(36 * betSize)));
+        return ev.winner === bettingAccount && ev.payout.eq(betSize.muln(36));
       });
 
-      assert.equal(web3.eth.getBalance(roulette.address).toNumber(), originalBalance + betSize - betSize * 36, "Balance should have losses subtracted");
+      let expectedBalance = originalBalance.add(betSize).sub(betSize.muln(36));
+      let actualBalance = new BN(await web3.eth.getBalance(roulette.address));
+      assert.equal(actualBalance.toString(), expectedBalance.toString(), "Balance should have losses subtracted");
     });
 
     it("loses when bet on the wrong number", async () => {
       // given
-      let betSize = (await roulette.maxBet()).toNumber()
-      let betNumber = 1;
+      let betSize = await roulette.maxBet()
+      let betNumber = BN.ONE;
 
       // when
-      await roulette.bet(betNumber, {from: bettingAccount, value: betSize});
+      roulette.bet(betNumber, {from: bettingAccount, value: betSize});
+
       let playEvent = await getFirstEvent(roulette.Play({fromBlock: 'latest'}));
       let callbackTx = await truffleAssert.createTransactionResult(roulette, playEvent.transactionHash);
 
@@ -86,20 +89,22 @@ contract('Roulette', (accounts) => {
       });
       truffleAssert.eventNotEmitted(callbackTx, 'Payout');
 
-      assert.equal(web3.eth.getBalance(roulette.address).toNumber(), originalBalance + betSize, "Balance should have winnings added");
+      let expectedBalance = originalBalance.add(betSize);
+      let actualBalance = new BN(await web3.eth.getBalance(roulette.address));
+      assert.equal(actualBalance.toString(), expectedBalance.toString(), "Balance should have winnings added");
     });
 
     it("pays an oraclize fee when playing the second time", async () => {
       // given
-      let betSize = (await roulette.maxBet()).toNumber()
-      let betNumber = 1;
+      let betSize = await roulette.maxBet()
+      let betNumber = BN.ONE;
 
       // when
       let betTx = await roulette.bet(betNumber, {from: bettingAccount, value: betSize});
 
       // then
       truffleAssert.eventEmitted(betTx, 'Bet', (ev) => {
-        return ev.player === bettingAccount && ev.betSize.eq(BigNumber(betSize));
+        return ev.player === bettingAccount && ev.betSize.eq(betSize);
       });
 
       // when
@@ -107,32 +112,24 @@ contract('Roulette', (accounts) => {
 
       // then
       truffleAssert.eventEmitted(betTx, 'Bet', (ev) => {
-        return ev.player === bettingAccount && ev.betSize.lt(BigNumber(betSize));
+        return ev.player === bettingAccount && ev.betSize.lt(betSize);
       });
 
-      assert.isBelow(web3.eth.getBalance(roulette.address).toNumber(), originalBalance + 2 * betSize, "Oraclize fee should be deducted from balance");
+      let expectedLtBalance = originalBalance.add(betSize.muln(2));
+      let actualBalance = new BN(await web3.eth.getBalance(roulette.address));
+
+      assert.isTrue(actualBalance.lt(expectedLtBalance), "Oraclize fee should be deducted from balance");
     });
   });
   describe("Pausing functionality", () => {
     it("Can not play when paused", async () => {
       // given
       await roulette.pause({from: ownerAccount});
-      let betSize = (await roulette.maxBet()).toNumber()
-      let betNumber = 1;
+      let betSize = await roulette.maxBet()
+      let betNumber = BN.ONE;
 
       // when, then
-      await assert.isRejected(roulette.bet(betNumber, {from: bettingAccount, value: betSize}));
+      await truffleAssert.reverts(roulette.bet(betNumber, {from: bettingAccount, value: betSize}));
     });
   });
 });
-
-getFirstEvent = (_event) => {
-  return new Promise((resolve, reject) => {
-    _event.watch((error, log) => {
-      _event.stopWatching();
-      if (error !== null)
-      reject(error);
-      resolve(log);
-    });
-  });
-}

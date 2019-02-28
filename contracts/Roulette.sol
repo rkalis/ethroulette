@@ -1,7 +1,7 @@
-pragma solidity ^0.4.24;
+pragma solidity ^0.5.0;
 
 import "./BackingContract.sol";
-import "oraclize-api/contracts/usingOraclize.sol";
+import "./oraclizeAPI.sol";
 import "openzeppelin-solidity/contracts/lifecycle/Pausable.sol";
 
 /**
@@ -10,7 +10,7 @@ import "openzeppelin-solidity/contracts/lifecycle/Pausable.sol";
  */
 contract Roulette is usingOraclize, Pausable, BackingContract {
     struct PlayerInfo {
-        address player;
+        address payable player;
         uint256 betSize;
         uint8 betNumber;
     }
@@ -21,9 +21,9 @@ contract Roulette is usingOraclize, Pausable, BackingContract {
     event Play(address indexed player, bytes32 qid, uint256 betSize, uint8 betNumber, uint8 winningNumber);
     event Payout(address indexed winner, bytes32 qid, uint256 payout);
 
-    constructor(address roscoinAddress) BackingContract(roscoinAddress) public {
+    constructor(address payable roscoinAddress) BackingContract(roscoinAddress) public {
         // Set OAR for use with ethereum-bridge, remove for production
-        OAR = OraclizeAddrResolverI(0x6f485C8BF6fc43eA212E93BBF8ce046C7f1cb475);
+        // OAR = OraclizeAddrResolverI(0x6f485C8BF6fc43eA212E93BBF8ce046C7f1cb475);
     }
 
     /**
@@ -55,7 +55,7 @@ contract Roulette is usingOraclize, Pausable, BackingContract {
      * @param qid The query id of the corresponding Oraclize query.
      * @param result The result of the Oraclize query.
      */
-    function __callback(bytes32 qid, string result) public {
+    function __callback(bytes32 qid, string memory result) public {
         require(msg.sender == oraclize_cbAddress(), "Can only be called from oraclize callback address");
         require(players[qid].player != address(0), "Query needs an associated player");
 
@@ -66,11 +66,14 @@ contract Roulette is usingOraclize, Pausable, BackingContract {
         balanceForBacking = balanceForBacking.add(playerInfo.betSize);
 
         if (playerInfo.betNumber == winningNumber) {
-            payout(playerInfo.player, qid, playerInfo.betSize.mul(36));
-        }
+            address payable playerAddress = playerInfo.player;
+            uint256 payoutAmount = playerInfo.betSize.mul(36);
+            delete players[qid];
 
-        // TODO: Perhaps delete this info before sending payout (reentrancy)
-        delete players[qid];
+            payout(playerAddress, qid, payoutAmount);
+        } else {
+            delete players[qid];
+        }
     }
 
     /**
@@ -86,7 +89,7 @@ contract Roulette is usingOraclize, Pausable, BackingContract {
         require(amount <= address(this).balance, "Payout amount should not be more than contract balance");
 
         balanceForBacking = balanceForBacking.sub(amount);
-        winner.transfer(amount);
+        address(uint160(winner)).transfer(amount);
         emit Payout(winner, qid, amount);
     }
 
