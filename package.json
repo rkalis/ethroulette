@@ -63,7 +63,8 @@
     "truffle": "^4.1.14",
     "truffle-assertions": "^0.8.0",
     "truffle-contract": "^3.0.4",
-    "truffle-hdwallet-provider": "0.0.6",
+    "truffle-hdwallet-provider": "^1.0.10",
+    "truffle-plugin-verify": "^0.2.1",
     "ts-node": "^3.3.0",
     "tslint": "^5.9.1",
     "typescript": "~2.4.0"
