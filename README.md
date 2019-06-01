@@ -73,9 +73,9 @@ Before doing so, however, the following line should be removed from the construc
 OAR = OraclizeAddrResolverI(0x6f485C8BF6fc43eA212E93BBF8ce046C7f1cb475);
 ```
 
-In order to migrate to the Rinkeby testnet, you should also add a mnemonic for your RInkeby accounts and your Infura API key to a `.env` file on the root level of this repository.
+In order to migrate to the Rinkeby testnet, you should also add a mnemonic for your RInkeby accounts and your Infura project ID to a `.env` file on the root level of this repository.
 ```
-INFURA_API_KEY=<Key here>
+INFURA_ID=<Key here>
 MNEMONIC=<Mnemonic here>
 ```
 
