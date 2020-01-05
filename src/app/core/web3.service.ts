@@ -1,7 +1,6 @@
 import { Injectable } from '@angular/core';
 import { Subject } from 'rxjs';
 import { BigNumber } from 'bignumber.js';
-import BN = require('bn.js');
 
 declare let require: any;
 const Web3 = require('web3');
@@ -49,10 +48,6 @@ export class Web3Service {
 
   public fromWei(amount: BigNumber, unit: string): string {
     return this.web3.utils.fromWei(amount.toString(), unit);
-  }
-
-  public toBN(number: string): BN {
-    return this.web3.utils.toBN(number);
   }
 
   public async artifactsToContract(artifacts) {
