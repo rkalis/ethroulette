@@ -3,7 +3,7 @@ import { StatusService } from './../../shared/status.service';
 import { AccountService } from '../../core/account.service';
 import { Component, OnInit, ChangeDetectorRef } from '@angular/core';
 import { Web3Service } from '../../core/web3.service';
-import { MatTableDataSource } from '@angular/material';
+import { MatTableDataSource } from '@angular/material/table';
 
 export class Bet {
   id: string;
