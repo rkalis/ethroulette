@@ -10,6 +10,7 @@ import { Web3Service } from '../../core/web3.service';
   styleUrls: ['./roulette-player.component.css']
 })
 export class RoulettePlayerComponent implements OnInit {
+  maxBet: string;
 
   constructor(
     private web3Service: Web3Service,
@@ -27,6 +28,8 @@ export class RoulettePlayerComponent implements OnInit {
     try {
       await this.contractService.ready();
       await this.accountService.ready();
+      await this.updateMaxBet()
+      setInterval(() => this.updateMaxBet(), 1000);
     } catch (error) {
       console.log(error);
       this.statusService.showStatus('Error connecting with smart contracts; see log.');
@@ -57,5 +60,16 @@ export class RoulettePlayerComponent implements OnInit {
       console.log(e);
       this.statusService.showStatus('Error placing bet; see log.');
     }
+  }
+
+  async updateMaxBet() {
+    const deployedRoulette = this.contractService.getDeployedContract('Roulette');
+    if (!deployedRoulette) {
+      this.statusService.showStatus('Roulette contract is not available');
+      return;
+    }
+
+    const maxBetStr = this.web3Service.fromWei(await deployedRoulette.maxBet(), 'ether');
+    this.maxBet = (Math.floor(Number(maxBetStr) * 1000) / 1000).toFixed(3);
   }
 }

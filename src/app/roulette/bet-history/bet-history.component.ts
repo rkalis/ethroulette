@@ -1,7 +1,6 @@
 import { ContractService } from './../../core/contract.service';
 import { StatusService } from './../../shared/status.service';
 import { AccountService } from '../../core/account.service';
-import { Subject } from 'rxjs/Rx';
 import { Component, OnInit, ChangeDetectorRef } from '@angular/core';
 import { Web3Service } from '../../core/web3.service';
 import { MatTableDataSource } from '@angular/material';
@@ -9,18 +8,18 @@ import { MatTableDataSource } from '@angular/material';
 export class Bet {
   id: string;
   blockNumber: number;
-  betSize: number;
+  betSize: string;
   betNumber: number;
   winningNumber: number;
-  payout: number;
+  payout: string;
 
   constructor(
     id: string,
     blockNumber: number,
-    betSize: number,
+    betSize: string,
     betNumber: number,
     winningNumber: number,
-    payout: number
+    payout: string
   ) {
     this.id = id;
     this.blockNumber = blockNumber;
@@ -36,7 +35,7 @@ export class Bet {
   styleUrls: ['./bet-history.component.css']
 })
 export class BetHistoryComponent implements OnInit {
-  betsDataSource: MatTableDataSource<Bet>;
+  betHistoryDataSource: MatTableDataSource<Bet>;
   currentBetsDataSource: MatTableDataSource<Bet>;
   bets: Bet[] = [];
 
@@ -55,9 +54,11 @@ export class BetHistoryComponent implements OnInit {
 
   private async init() {
     try {
+      await this.web3Service.ready();
       await this.contractService.ready();
       await this.accountService.ready();
       this.watchAccount();
+      this.getBets();
     } catch (error) {
       console.log(error);
       this.statusService.showStatus('Error connecting with smart contracts; see log.');
@@ -65,28 +66,25 @@ export class BetHistoryComponent implements OnInit {
   }
 
   watchAccount() {
-    this.accountService.accountObservable.subscribe((account) => {
-      const betEvent = this.contractService.newEvent('Roulette', 'Bet', {player: account});
-      const playEvent = this.contractService.newEvent('Roulette', 'Play', {player: account});
-      const payoutEvent = this.contractService.newEvent('Roulette', 'Payout', {player: account});
-
-      betEvent.get(this.initialiseBets);
-      betEvent.watch(this.addBet);
-
-      playEvent.get(this.initialiseBets);
-      playEvent.watch(this.addBet);
-
-      payoutEvent.get(this.initialiseBets);
-      payoutEvent.watch(this.addBet);
+    this.accountService.accountObservable.subscribe(() => {
+      this.getBets();
     });
   }
 
-  initialiseBets = async (error, bets) => {
-    if (error != null) {
-      console.warn('There was an error fetching your bets.');
-      return;
-    }
+  async getBets() {
+    const roulette = this.contractService.getDeployedContract('Roulette');
+    const options = { filter: { player: this.accountService.account }, fromBlock: 0, toBlock: 'latest' }
 
+    this.initialiseBets(await roulette.getPastEvents('Bet', options));
+    this.initialiseBets(await roulette.getPastEvents('Play', options));
+    this.initialiseBets(await roulette.getPastEvents('Payout', options));
+
+    roulette.Bet().on('data', this.addBet)
+    roulette.Play().on('data', this.addBet)
+    roulette.Payout().on('data', this.addBet)
+  }
+
+  initialiseBets = (bets) => {
     for (const bet of bets) {
       const betSize = bet.args.betSize == null ? null : this.web3Service.fromWei(bet.args.betSize, 'ether');
       const payout = bet.args.payout == null ? null : this.web3Service.fromWei(bet.args.payout, 'ether');
@@ -94,11 +92,7 @@ export class BetHistoryComponent implements OnInit {
     }
   }
 
-  addBet = async (error, bet) => {
-    if (error != null) {
-      console.warn('There was an error fetching your bets.');
-      return;
-    }
+  addBet = (bet) => {
     const betSize = bet.args.betSize == null ? null : this.web3Service.fromWei(bet.args.betSize, 'ether');
     const payout = bet.args.payout == null ? null : this.web3Service.fromWei(bet.args.payout, 'ether');
     this.addOrUpdate(new Bet(bet.args.qid, bet.blockNumber, betSize, bet.args.betNumber, bet.args.winningNumber, payout));
@@ -131,7 +125,7 @@ export class BetHistoryComponent implements OnInit {
       this.bets.push(bet);
       console.log('Added new bet: ', bet);
     }
-    this.betsDataSource = new MatTableDataSource(this.bets);
+    this.betHistoryDataSource = new MatTableDataSource(this.betHistory());
     this.currentBetsDataSource = new MatTableDataSource(this.currentBets());
     this.changeDetectorRef.detectChanges();
   }
@@ -142,5 +136,9 @@ export class BetHistoryComponent implements OnInit {
 
   currentBets(): Bet[] {
     return this.bets.filter(bet => bet.winningNumber == null);
+  }
+
+  betHistory(): Bet[] {
+    return this.bets.filter(bet => bet.winningNumber != null);
   }
 }

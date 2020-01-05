@@ -13,8 +13,8 @@ import { Web3Service } from '../../core/web3.service';
 export class RoscoinMarketComponent implements OnInit {
   accounts: string[];
 
-  balance: number;
-  currentPrice: number;
+  balance: string;
+  currentPrice: string;
 
   constructor(
     private web3Service: Web3Service,
@@ -34,6 +34,9 @@ export class RoscoinMarketComponent implements OnInit {
       await this.accountService.ready();
       this.watchAccount();
       this.refreshPrice();
+      this.refreshBalance();
+      setInterval(() => this.refreshPrice(), 1000);
+      setInterval(() => this.refreshBalance(), 10000);
     } catch (error) {
       console.log(error);
       this.statusService.showStatus('Error connecting with smart contracts; see log.');

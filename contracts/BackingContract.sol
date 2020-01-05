@@ -44,7 +44,7 @@ contract BackingContract {
 
     /**
      * @notice Allows the backed token to withdraw funds from the contract.
-     * @dev Funds are removed to balanceForBacking as well.
+     * @dev Funds are removed from balanceForBacking as well.
      * @param ethAmount The amount of eth to withdraw.
      */
     function withdraw(uint256 ethAmount) external onlyBackedToken {

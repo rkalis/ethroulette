@@ -36,7 +36,7 @@ contract BackedToken is ERC20 {
     }
 
     /**
-     * @notice Payable function used by the backing contract to put funds back in the backed token contract..
+     * @notice Payable function used by the backing contract to put funds back in the backed token contract.
      */
     function deposit() external payable onlyWhenBacked onlyBackingContract {}
 
@@ -44,14 +44,13 @@ contract BackedToken is ERC20 {
      * @notice Backs this token using the passed backing contract address.
      * @dev Only used in initialisation.
      * @param backingContractAddress The address of a BackingContract that will back this token.
-     * @return The total token supply.
      */
     function back(address payable backingContractAddress) external onlyWhenNotBacked {
         backingContract = BackingContract(backingContractAddress);
     }
 
     /**
-     * @notice Buys an amount of tokens
+     * @notice Buys an amount of tokens.
      * @dev Uses the conversion functions.
      * @dev Emits Buy event.
      */

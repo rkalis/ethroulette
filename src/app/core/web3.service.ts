@@ -1,10 +1,11 @@
 import { Injectable } from '@angular/core';
-import * as contract from 'truffle-contract';
 import { Subject } from 'rxjs/Rx';
 import { BigNumber } from 'bignumber.js';
+import BN = require('bn.js');
 
 declare let require: any;
 const Web3 = require('web3');
+const TruffleContract = require('@truffle/contract');
 
 declare let window: any;
 
@@ -29,42 +30,39 @@ export class Web3Service {
     return this._ready;
   }
 
-  public bootstrapWeb3() {
-    // Checking if Web3 has been injected by the browser (Mist/MetaMask)
-    if (typeof window.web3 !== 'undefined') {
-      // Use Mist/MetaMask's provider
+  public async bootstrapWeb3() {
+    try {
+      if (window.ethereum) {
+        await window.ethereum.enable();
+      }
       this.web3 = new Web3(window.web3.currentProvider);
-    } else {
-      console.log('No web3? You should consider trying MetaMask!');
-
-      // Hack to provide backwards compatibility for Truffle, which uses web3js 0.20.x
-      Web3.providers.HttpProvider.prototype.sendAsync = Web3.providers.HttpProvider.prototype.send;
-      // fallback - use your fallback strategy (local node / hosted node + in-dapp id mgmt / fail)
-      this.web3 = new Web3(new Web3.providers.HttpProvider('http://localhost:8545'));
+    } catch(e) {
+      console.log(e)
     }
 
-    setInterval(() => this.refreshAccounts(), 100);
+    setInterval(() => this.refreshAccounts(), 1000);
   }
 
-  public toWei(amount: number, unit: string) {
+  public toWei(amount: number, unit: string): string {
     return this.web3.utils.toWei(amount.toString(), unit);
   }
 
-  public fromWei(amount: BigNumber, unit: string) {
+  public fromWei(amount: BigNumber, unit: string): string {
     return this.web3.utils.fromWei(amount.toString(), unit);
   }
 
+  public toBN(number: string): BN {
+    return this.web3.utils.toBN(number);
+  }
+
   public async artifactsToContract(artifacts) {
-    if (!this.web3) {
-      const delay = new Promise(resolve => setTimeout(resolve, 100));
-      await delay;
-      return await this.artifactsToContract(artifacts);
+    while (!this.web3) {
+      await new Promise(resolve => setTimeout(resolve, 500))
     }
 
-    const contractAbstraction = contract(artifacts);
+    const contractAbstraction = TruffleContract(artifacts);
     contractAbstraction.setProvider(this.web3.currentProvider);
     return contractAbstraction;
-
   }
 
   private refreshAccounts() {

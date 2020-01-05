@@ -9,9 +9,7 @@ import "./Roulette.sol";
  * to test the betting functionality.
  */
 contract RouletteForTesting is Roulette {
-    constructor(address payable roscoinAddress) Roulette(roscoinAddress) public {
-        OAR = OraclizeAddrResolverI(0x6f485C8BF6fc43eA212E93BBF8ce046C7f1cb475);
-    }
+    constructor(address payable roscoinAddress) Roulette(roscoinAddress) public {}
 
     /**
      * @notice Overrides the existing bet function, always takes 1 as winning number.

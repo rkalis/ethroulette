@@ -5,7 +5,7 @@
       <input type="text" matInput id="betNumber" placeholder="Bet Number" #betNumber>
     </mat-form-field>
     <mat-form-field>
-      <input type="text" matInput id="betAmount" placeholder="Bet Amount" #betAmount>
+    <input type="text" matInput id="betAmount" placeholder="Bet Amount (max {{maxBet}})" #betAmount>
     </mat-form-field>
     <button mat-button id="bet" (click)="bet(betNumber.value, betAmount.value)">Bet</button>
   </mat-card-content>

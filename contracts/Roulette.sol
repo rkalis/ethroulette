@@ -21,10 +21,7 @@ contract Roulette is usingOraclize, Pausable, BackingContract {
     event Play(address indexed player, bytes32 qid, uint256 betSize, uint8 betNumber, uint8 winningNumber);
     event Payout(address indexed winner, bytes32 qid, uint256 payout);
 
-    constructor(address payable roscoinAddress) BackingContract(roscoinAddress) public {
-        // Set OAR for use with ethereum-bridge, remove for production
-        // OAR = OraclizeAddrResolverI(0x6f485C8BF6fc43eA212E93BBF8ce046C7f1cb475);
-    }
+    constructor(address payable roscoinAddress) BackingContract(roscoinAddress) public {}
 
     /**
      * @notice Bets an amount of eth on a specific number.
