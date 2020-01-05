@@ -1,10 +1,14 @@
 import { Web3Service } from './web3.service';
 import { Injectable } from '@angular/core';
-import { StatusService } from '../shared/status.service';
+import { environment } from '../../environments/environment';
 
 declare let require: any;
-const roscoin_artifacts = require('../../../build/contracts/Roscoin.json');
-const roulette_artifacts = require('../../../build/contracts/Roulette.json');
+const roscoin_artifacts = environment.production
+  ? require('../artifacts/Roscoin.json')
+  : require('../../../build/contracts/Roscoin.json');
+const roulette_artifacts = environment.production
+  ? require('../artifacts/Roulette.json')
+  : require('../../../build/contracts/Roulette.json');
 
 @Injectable()
 export class ContractService {
