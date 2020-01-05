@@ -24,7 +24,7 @@ Because the token's price is derived from the balance of the Roulette contract, 
 
 ## Local Installation
 ### Prerequisites
-We need truffle to compile, migrate and test the smart contracts. We need Ganache to run a local development blockchain instance. We need ethereum-bridge to simulate Oraclize functionality within the local Ganache instance. We assume that things like git, npm, etc. are already installed as well.
+We need truffle to compile, migrate and test the smart contracts. We need Ganache to run a local development blockchain instance. We need ethereum-bridge to simulate Oraclize functionality within the local Ganache instance. We assume that things like git, npm, yarn, etc. are already installed as well.
 ```bash
 sudo apt install build-essential -y
 npm install -g ethereum-bridge truffle ganache-cli
@@ -47,9 +47,9 @@ ethereum-bridge -H localhost:8545 -a 9 --dev
 Ganache and ethereum-bridge need to keep running in the background, while the third terminal window will be used for running the tests / application.
 
 ### Compilation & Migration
-The project including all dependencies can be set up using npm.
+The project including all dependencies can be set up using Yarn.
 ```
-npm install
+yarn
 ```
 
 All contracts can be compiled with Truffle.
@@ -84,7 +84,7 @@ truffle test
 ### Running the frontend
 Once the contracts have been succesfully migrated (either to Ganache or Rinkeby), the frontend can be run.
 ```
-npm start
+yarn start
 ```
 
 The frontend can then be accessed at `http://localhost:4200/`.

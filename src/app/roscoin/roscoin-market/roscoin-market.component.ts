@@ -33,8 +33,6 @@ export class RoscoinMarketComponent implements OnInit {
       await this.contractService.ready();
       await this.accountService.ready();
       this.watchAccount();
-      this.refreshPrice();
-      this.refreshBalance();
       setInterval(() => this.refreshPrice(), 1000);
       setInterval(() => this.refreshBalance(), 10000);
     } catch (error) {
@@ -44,9 +42,7 @@ export class RoscoinMarketComponent implements OnInit {
   }
 
   watchAccount() {
-    this.accountService.accountObservable.subscribe((account) => {
-      this.refreshBalance();
-    });
+    this.accountService.accountObservable.subscribe(this.refreshBalance);
   }
 
   async buy(purchaseAmountInEth: number) {

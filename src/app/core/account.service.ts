@@ -1,6 +1,6 @@
 import { Web3Service } from './web3.service';
 import { Injectable } from '@angular/core';
-import { Subject, BehaviorSubject } from 'rxjs/Rx';
+import { Subject } from 'rxjs';
 
 
 @Injectable()
