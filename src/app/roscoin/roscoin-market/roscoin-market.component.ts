@@ -1,6 +1,5 @@
 import { ContractService } from './../../core/contract.service';
 import { StatusService } from './../../shared/status.service';
-import { BigNumber } from 'bignumber.js';
 import { AccountService } from '../../core/account.service';
 import { Component, OnInit } from '@angular/core';
 import { Web3Service } from '../../core/web3.service';
@@ -104,7 +103,7 @@ export class RoscoinMarketComponent implements OnInit {
     console.log('Refreshing balance');
     try {
       console.log('Account: ', this.accountService.account);
-      const roscoinBalanceInWei: BigNumber = await deployedRoscoin.balanceOf(this.accountService.account);
+      const roscoinBalanceInWei = await deployedRoscoin.balanceOf(this.accountService.account);
       const roscoinBalance = this.web3Service.fromWei(roscoinBalanceInWei, 'ether');
       console.log('Found balance: ' + roscoinBalance);
       this.balance = roscoinBalance;
@@ -118,7 +117,7 @@ export class RoscoinMarketComponent implements OnInit {
     const deployedRoscoin = this.contractService.getDeployedContract('Roscoin');
     console.log('Refreshing price');
     try {
-      const tokenPriceInWei: BigNumber = await deployedRoscoin.tokenPrice();
+      const tokenPriceInWei = await deployedRoscoin.tokenPrice();
       const tokenPrice = this.web3Service.fromWei(tokenPriceInWei, 'ether');
       console.log('Found price: ' + tokenPrice);
       this.currentPrice = tokenPrice;

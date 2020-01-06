@@ -3,14 +3,17 @@
   "version": 1,
   "newProjectRoot": "projects",
   "projects": {
-    "angular-truffle-box": {
+    "ethroulette": {
       "root": "",
       "sourceRoot": "src",
       "projectType": "application",
       "architect": {
         "build": {
-          "builder": "@angular-devkit/build-angular:browser",
+          "builder": "@angular-builders/custom-webpack:browser",
           "options": {
+            "customWebpackConfig": {
+              "path": "./extra-webpack.config.js"
+            },
             "outputPath": "dist",
             "index": "src/index.html",
             "main": "src/main.ts",
@@ -23,7 +26,17 @@
             "styles": [
               "src/styles.css"
             ],
-            "scripts": []
+            "scripts": [],
+            "fileReplacements": [
+              {
+                "replace": "src/app/artifacts/Roscoin.json",
+                "with": "build/contracts/Roscoin.json"
+              },
+              {
+                "replace": "src/app/artifacts/Roulette.json",
+                "with": "build/contracts/Roulette.json"
+              }
+            ]
           },
           "configurations": {
             "production": {
@@ -48,18 +61,18 @@
         "serve": {
           "builder": "@angular-devkit/build-angular:dev-server",
           "options": {
-            "browserTarget": "angular-truffle-box:build"
+            "browserTarget": "ethroulette:build"
           },
           "configurations": {
             "production": {
-              "browserTarget": "angular-truffle-box:build:production"
+              "browserTarget": "ethroulette:build:production"
             }
           }
         },
         "extract-i18n": {
           "builder": "@angular-devkit/build-angular:extract-i18n",
           "options": {
-            "browserTarget": "angular-truffle-box:build"
+            "browserTarget": "ethroulette:build"
           }
         },
         "test": {
@@ -90,14 +103,9 @@
           }
         }
       }
-    },
-    "angular-truffle-box-e2e": {
-      "root": "e2e",
-      "sourceRoot": "e2e",
-      "projectType": "application"
     }
   },
-  "defaultProject": "angular-truffle-box",
+  "defaultProject": "ethroulette",
   "schematics": {
     "@schematics/angular:component": {
       "prefix": "app",
